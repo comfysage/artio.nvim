@@ -50,4 +50,29 @@ builtins.files = function()
   })
 end
 
+local function find_helptags()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.bo[buf].buftype = "help"
+  local tags = vim.api.nvim_buf_call(buf, function()
+    return vim.fn.taglist(".*")
+  end)
+  vim.api.nvim_buf_delete(buf, { force = true })
+  return vim.tbl_map(function(t)
+    return t.name
+  end, tags)
+end
+
+builtins.helptags = function()
+  local lst = find_helptags()
+
+  return artio.generic(lst, {
+    prompt = "helptags",
+    on_close = function(text, _)
+      vim.schedule(function()
+        vim.cmd.help(text)
+      end)
+    end,
+  })
+end
+
 return builtins
