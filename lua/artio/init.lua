@@ -1,68 +1,30 @@
 local artio = {}
 
-local function lzrq(modname)
-  return setmetatable({}, {
-    __index = function(_, key)
-      return require(modname)[key]
-    end,
-  })
-end
-
-local Picker = lzrq("artio.picker")
-
-local findprg = "fd -p -t f --color=never"
-
-local function find_files(match)
-  if not findprg then
-    return {}
-  end
-  local farg = string.format("'%s'", match or '')
-  local findcmd, n = findprg:gsub("%$%*", farg)
-  if n == 0 then
-    findcmd = findcmd .. " " .. farg
-  end
-  local fn = function(o)
-    local src = o.stderr
-    if o.code == 0 then
-      src = o.stdout
+---@param lst string[]
+artio.sorter = function(lst)
+  return function(input)
+    if not lst or #lst == 0 then
+      return {}
     end
-    src = src
-    local lines = vim.split(src, "\n", { trimempty = true })
-    return lines
+
+    local matches = vim.fn.matchfuzzypos(lst, input)
+    return vim
+      .iter(ipairs(matches[1]))
+      :map(function(index, v)
+        return { v, matches[2][index] }
+      end)
+      :totable()
   end
-  return fn(vim
-    .system({ vim.o.shell, "-c", findcmd }, {
-      text = true,
-    })
-    :wait())
 end
 
-artio.files = function()
-  return artio.pick({
-    prompt = "files",
-    fn = function(input)
-      local lst = find_files()
-      if not lst or #lst == 0 then
-        return {}
-      end
-
-      local matches = vim.fn.matchfuzzypos(lst, input)
-      return vim
-        .iter(ipairs(matches[1]))
-        :map(function(index, v)
-          return { v, matches[2][index] }
-        end)
-        :totable()
-    end,
-    on_close = function(text, _)
-      vim.schedule(function()
-        vim.cmd.edit(text)
-      end)
-    end,
-  })
+artio.generic = function(lst, props)
+  return artio.pick(vim.tbl_deep_extend("force", {
+    fn = artio.sorter(lst),
+  }, props))
 end
 
 artio.pick = function(...)
+  local Picker = require("artio.picker")
   return Picker:new(...):open()
 end
 

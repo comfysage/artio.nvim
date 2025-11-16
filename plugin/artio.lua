@@ -36,5 +36,5 @@ vim.api.nvim_create_autocmd("ColorSchemePre", {
 })
 
 vim.keymap.set("n", "<Plug>(picker-find)", function()
-  return require("artio").files()
+  return require("artio.builtins").files()
 end)
