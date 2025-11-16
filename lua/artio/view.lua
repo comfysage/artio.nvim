@@ -305,13 +305,22 @@ local ext_match_opts = {
   hl_mode = "combine",
 }
 
+local offset = 0
+
 function View:showitems()
   local indent = vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1
   local prefix = (" "):rep(indent)
 
+  local _offset = math.max(0, self.picker.idx - (self.win.height - 1))
+  if _offset > offset then
+    offset = _offset
+  elseif self.picker.idx <= offset then
+    offset = self.picker.idx - 1
+  end
+
   local lines = {} ---@type string[]
   local hls = {}
-  for i = 1, math.min(#self.picker.items, self.win.height - 1) do
+  for i = 1 + offset, math.min(#self.picker.items, self.win.height - 1 + offset) do
     lines[#lines + 1] = ("%s%s"):format(prefix, self.picker.items[i][1])
     hls[#hls + 1] = self.picker.items[i][2]
   end
@@ -326,7 +335,7 @@ function View:showitems()
         view_ns,
         cmdline.srow + i - 1,
         col,
-        vim.tbl_extend("force", ext_match_opts, { end_col = col+1 })
+        vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 })
       )
     end
   end
@@ -343,7 +352,7 @@ function View:hlselect()
     return
   end
 
-  self.select_ext = vim.api.nvim_buf_set_extmark(ext.bufs.cmd, view_ns, cmdline.srow + idx - 1, 0, {
+  self.select_ext = vim.api.nvim_buf_set_extmark(ext.bufs.cmd, view_ns, cmdline.srow + idx - offset - 1, 0, {
     virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
     hl_mode = "combine",
     virt_text_pos = "overlay",

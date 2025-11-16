@@ -59,11 +59,13 @@ function Picker:open()
       if typed == "<down>" then
         self.idx = self.idx + 1
         self:fix()
+        view:showitems()
         view:hlselect()
         return ""
       elseif typed == "<up>" then
         self.idx = self.idx - 1
         self:fix()
+        view:showitems()
         view:hlselect()
         return ""
       elseif typed == "<cr>" then
@@ -97,7 +99,7 @@ end
 
 function Picker:fix()
   self.idx = math.max(self.idx, self.opts.preselect and 1 or 0)
-  self.idx = math.min(self.idx, self.win.height - 1, #self.items)
+  self.idx = math.min(self.idx, #self.items)
 end
 
 function Picker:getitems(input)
