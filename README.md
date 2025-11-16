@@ -49,5 +49,5 @@ require("artio").setup({
 -- override built-in ui select with artio
 vim.ui.select = require("artio").select
 
-vim.keymap.set("n", "<leader><leader>", "<Plug>(picker-find)")
+vim.keymap.set("n", "<leader><leader>", "<Plug>(artio-files)")
 ```
