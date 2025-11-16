@@ -1,4 +1,20 @@
+local function lzrq(modname)
+  return setmetatable({}, {
+    __index = function(_, key)
+      return require(modname)[key]
+    end,
+  })
+end
+
+local config = lzrq("artio.config")
+
 local artio = {}
+
+---@param cfg? artio.config
+artio.setup = function(cfg)
+  cfg = cfg or {}
+  config.set(config.override(cfg))
+end
 
 ---@param lst string[]
 artio.sorter = function(lst)
