@@ -75,4 +75,24 @@ builtins.helptags = function()
   })
 end
 
+builtins.buffers = function()
+  local lst = vim
+    .iter(vim.api.nvim_list_bufs())
+    :filter(function(bufnr)
+      return vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buflisted
+    end)
+    :totable()
+
+  return artio.select(lst, {
+    prompt = "buffers",
+    format_item = function(bufnr)
+      return vim.api.nvim_buf_get_name(bufnr)
+    end,
+  }, function(bufnr, _)
+    vim.schedule(function()
+      vim.cmd.buffer(bufnr)
+    end)
+  end)
+end
+
 return builtins
