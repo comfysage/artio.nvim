@@ -39,6 +39,28 @@ artio.sorter = function(lst)
   end
 end
 
+---@generic T
+---@param items T[] Arbitrary items
+---@param opts vim.ui.select.Opts Additional options
+---@param on_choice fun(item: T|nil, idx: integer|nil)
+artio.select = function(items, opts, on_choice)
+  local lst = items
+  if opts.format_item and vim.is_callable(opts.format_item) then
+    lst = vim
+      .iter(ipairs(items))
+      :map(function(_, v)
+        return opts.format_item(v)
+      end)
+      :totable()
+  end
+  return artio.generic(lst, {
+    prompt = opts.prompt,
+    on_close = function(...)
+      return on_choice(...)
+    end,
+  })
+end
+
 artio.generic = function(lst, props)
   return artio.pick(vim.tbl_deep_extend("force", {
     fn = artio.sorter(lst),

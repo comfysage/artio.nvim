@@ -7,6 +7,8 @@ Inspired by forest spirits and the calm intuition of hunting, Artio helps you ge
 
 ## features
 
+Requires Neovim `>= 0.12`
+
 - Lightweight picker window built on Neovim's extui
 - Prompt + list UI components - minimal and focused
 - Fuzzy filtering using matchfuzzy (built-in)
@@ -43,6 +45,9 @@ require("artio").setup({
     hidestatusline = false, -- works best with laststatus=3
   },
 })
+
+-- override built-in ui select with artio
+vim.ui.select = require("artio").select
 
 vim.keymap.set("n", "<leader><leader>", "<Plug>(picker-find)")
 ```
