@@ -23,6 +23,12 @@ artio.sorter = function(lst)
       return {}
     end
 
+    if not input or #input == 0 then
+      return vim.tbl_map(function(v)
+        return { v, {} }
+      end, lst)
+    end
+
     local matches = vim.fn.matchfuzzypos(lst, input)
     return vim
       .iter(ipairs(matches[1]))
