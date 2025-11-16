@@ -3,6 +3,8 @@
 A minimal, nature-infused file picker for Neovim using the new extui window.
 Inspired by forest spirits and the calm intuition of hunting, Artio helps you gently select files without the weight of heavy fuzzy-finder dependencies.
 
+![preview](./assets/preview.png)
+
 ## features
 
 - Lightweight picker window built on Neovim's extui
