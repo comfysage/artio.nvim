@@ -19,6 +19,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     local cursorline_hl = vim.api.nvim_get_hl(0, { name = "CursorLine" })
     vim.api.nvim_set_hl(0, "ArtioSel", { fg = cursor_hl.bg, bg = cursorline_hl.bg, default = true })
     vim.api.nvim_set_hl(0, "ArtioPointer", { fg = cursor_hl.bg, default = true })
+
+    vim.api.nvim_set_hl(0, "ArtioMatch", { link = "PmenuMatch", default = true })
   end,
 })
 
@@ -29,6 +31,7 @@ vim.api.nvim_create_autocmd("ColorSchemePre", {
     vim.api.nvim_set_hl(0, "ArtioPrompt", {})
     vim.api.nvim_set_hl(0, "ArtioSel", {})
     vim.api.nvim_set_hl(0, "ArtioPointer", {})
+    vim.api.nvim_set_hl(0, "ArtioMatch", {})
   end,
 })
 

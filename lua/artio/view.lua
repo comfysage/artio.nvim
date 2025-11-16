@@ -298,18 +298,39 @@ function View:promptpos()
   promptidx = self.picker.opts.bottom and cmdline.erow or 0
 end
 
+local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
+---@type vim.api.keyset.set_extmark
+local ext_match_opts = {
+  hl_group = "ArtioMatch",
+  hl_mode = "combine",
+}
+
 function View:showitems()
-  local prefix = (" "):rep(vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1)
+  local indent = vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1
+  local prefix = (" "):rep(indent)
 
   local lines = {} ---@type string[]
+  local hls = {}
   for i = 1, math.min(#self.picker.items, self.win.height - 1) do
     lines[#lines + 1] = ("%s%s"):format(prefix, self.picker.items[i][1])
+    hls[#hls + 1] = self.picker.items[i][2]
   end
   cmdline.erow = cmdline.srow + #lines
   vim.api.nvim_buf_set_lines(ext.bufs.cmd, cmdline.srow, cmdline.erow, false, lines)
-end
 
-local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
+  for i = 1, #hls do
+    for j = 1, #hls[i] do
+      local col = indent + hls[i][j]
+      vim.api.nvim_buf_set_extmark(
+        ext.bufs.cmd,
+        view_ns,
+        cmdline.srow + i - 1,
+        col,
+        vim.tbl_extend("force", ext_match_opts, { end_col = col+1 })
+      )
+    end
+  end
+end
 
 function View:hlselect()
   if self.select_ext then

@@ -16,7 +16,7 @@ local function find_files(match)
   if not findprg then
     return {}
   end
-  local farg = string.format("'%s'", match)
+  local farg = string.format("'%s'", match or '')
   local findcmd, n = findprg:gsub("%$%*", farg)
   if n == 0 then
     findcmd = findcmd .. " " .. farg
@@ -41,7 +41,7 @@ artio.files = function()
   return artio.pick({
     prompt = "files",
     fn = function(input)
-      local lst = find_files(input)
+      local lst = find_files()
       if not lst or #lst == 0 then
         return {}
       end
