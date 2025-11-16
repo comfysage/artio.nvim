@@ -61,12 +61,15 @@ artio.select = function(items, opts, on_choice)
   })
 end
 
+---@param lst string[]
+---@param props artio.Picker.proto
 artio.generic = function(lst, props)
   return artio.pick(vim.tbl_deep_extend("force", {
     fn = artio.sorter(lst),
   }, props))
 end
 
+---@param ... artio.Picker.proto
 artio.pick = function(...)
   local Picker = require("artio.picker")
   return Picker:new(...):open()
