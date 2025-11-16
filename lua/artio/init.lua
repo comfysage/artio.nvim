@@ -55,8 +55,8 @@ artio.select = function(items, opts, on_choice)
   end
   return artio.generic(lst, {
     prompt = opts.prompt,
-    on_close = function(...)
-      return on_choice(...)
+    on_close = function(_, idx)
+      return on_choice(items[idx], idx)
     end,
   })
 end
