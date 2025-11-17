@@ -315,7 +315,7 @@ function View:showitems()
   if _offset > offset then
     offset = _offset
   elseif self.picker.idx <= offset then
-    offset = self.picker.idx - 1
+    offset = math.max(0, self.picker.idx - 1)
   end
 
   local lines = {} ---@type string[]
