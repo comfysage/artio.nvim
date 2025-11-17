@@ -1,9 +1,13 @@
 local View = require("artio.view")
 
+---@alias artio.Picker.item { id: integer, v: string, text: string }
+---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
+
 ---@class artio.Picker.proto
----@field idx? integer 1-indexed
----@field fn? fun(input: string): [string, integer][]
+---@field items? artio.Picker.item[]
+---@field fn? fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@field on_close? fun(text: string, idx: integer)
+---@field format_item? fun(item: string): string
 ---@field opts? artio.config.opts
 ---@field win? artio.config.win
 ---@field prompt? string
@@ -11,7 +15,8 @@ local View = require("artio.view")
 ---@field prompttext? string
 
 ---@class artio.Picker : artio.Picker.proto
----@field idx integer
+---@field idx integer 1-indexed
+---@field matches artio.Picker.match[]
 local Picker = {}
 Picker.__index = Picker
 
@@ -24,9 +29,26 @@ function Picker:new(props)
     prompt = "",
     idx = 1,
     items = {},
+    matches = {},
   }, require("artio.config").get(), props)
 
   t.prompttext = t.prompttext or ("%s %s"):format(t.prompt, t.opts.promptprefix)
+
+  t.items = vim
+    .iter(ipairs(t.items))
+    :map(function(i, v)
+      local text
+      if t.format_item and vim.is_callable(t.format_item) then
+        text = t.format_item(v)
+      end
+
+      return {
+        id = i,
+        v = v,
+        text = text or v,
+      }
+    end)
+    :totable()
 
   return setmetatable(t, Picker)
 end
@@ -58,14 +80,12 @@ function Picker:open()
       typed = string.lower(vim.fn.keytrans(typed))
       if typed == "<down>" then
         self.idx = self.idx + 1
-        self:fix()
-        view:showitems()
+        view:showmatches()
         view:hlselect()
         return ""
       elseif typed == "<up>" then
         self.idx = self.idx - 1
-        self:fix()
-        view:showitems()
+        view:showmatches()
         view:hlselect()
         return ""
       elseif typed == "<cr>" then
@@ -88,23 +108,24 @@ function Picker:open()
       return
     end
 
-    local current = self.items[self.idx]
+    local current = self.matches[self.idx][1]
     if not current then
       return
     end
 
-    self.on_close(current[1], self.idx)
+    local item = self.items[current]
+
+    self.on_close(item.v, item.id)
   end)()
 end
 
 function Picker:fix()
   self.idx = math.max(self.idx, self.opts.preselect and 1 or 0)
-  self.idx = math.min(self.idx, #self.items)
+  self.idx = math.min(self.idx, #self.matches)
 end
 
-function Picker:getitems(input)
-  self.items = self.fn(input)
-  return self.items
+function Picker:getmatches(input)
+  self.matches = self.fn(self.items, input)
 end
 
 return Picker

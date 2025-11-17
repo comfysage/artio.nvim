@@ -68,6 +68,8 @@ end
 ---@class artio.View.win
 ---@field height integer
 
+local prompthl_id = -1
+
 --- Set the cmdline buffer text and cursor position.
 ---
 ---@param content CmdContent
@@ -94,21 +96,19 @@ function View:show(content, pos, firstc, prompt, indent, level, hl_id)
     cmd_text = cmd_text .. chunk[2]
   end
 
-  self.picker:getitems(cmd_text)
-  self:showitems()
+  self.picker:getmatches(cmd_text)
+  self:showmatches()
 
   self:promptpos()
   set_text(content, ("%s%s%s"):format(firstc, prompt, (" "):rep(indent)))
+  self:updatecursor(pos)
 
   local height = math.max(1, vim.api.nvim_win_text_height(ext.wins.cmd, {}).all)
   height = math.min(height, self.win.height)
   win_config(ext.wins.cmd, false, height)
 
-  self:updatecursor(pos)
-
-  if promptlen > 0 and hl_id > 0 then
-    vim.api.nvim_buf_set_extmark(ext.bufs.cmd, ext.ns, promptidx, 0, { hl_group = hl_id, end_col = promptlen })
-  end
+  prompthl_id = hl_id
+  self:drawprompt()
   self:hlselect()
 end
 
@@ -145,6 +145,8 @@ function View:revertopts()
   end
 end
 
+local maxlistheight = 0 -- Max height of the matches list (`self.win.height - 1`)
+
 function View:on_resized()
   if self.picker.win.height > 0 then
     self.win.height = self.picker.win.height
@@ -152,6 +154,8 @@ function View:on_resized()
     self.win.height = vim.o.lines * self.picker.win.height
   end
   self.win.height = math.max(math.ceil(self.win.height), 1)
+
+  maxlistheight = self.win.height - 1
 end
 
 function View:open()
@@ -284,7 +288,10 @@ function View:updatecursor(pos)
   curpos[1], curpos[2] = promptidx + 1, promptlen + pos
 
   vim._with({ noautocmd = true }, function()
-    vim.api.nvim_win_set_cursor(ext.wins.cmd, curpos)
+    local ok, _ = pcall(vim.api.nvim_win_set_cursor, ext.wins.cmd, curpos)
+    if not ok then
+      vim.notify(("Failed to set cursor %d:%d"):format(curpos[1], curpos[2]), vim.log.levels.ERROR)
+    end
   end)
 end
 
@@ -305,24 +312,67 @@ local ext_match_opts = {
   hl_mode = "combine",
 }
 
+---@param line integer 0-based
+---@param col integer 0-based
+---@param opts vim.api.keyset.set_extmark
+---@return integer
+function View:mark(line, col, opts)
+  local ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
+  if not ok then
+    vim.notify(("Failed to add extmark %d:%d"):format(line, col), vim.log.levels.ERROR)
+    return -1
+  end
+
+  return result
+end
+
+function View:drawprompt()
+  if promptlen > 0 and prompthl_id > 0 then
+    self:mark(promptidx, 0, { hl_group = prompthl_id, end_col = promptlen })
+    self:mark(promptidx, 0, {
+      virt_text = {
+        {
+          ("[%d] (%d/%d)"):format(self.picker.idx, #self.picker.matches, #self.picker.items),
+          "InfoText",
+        },
+      },
+      virt_text_pos = "eol_right_align",
+      hl_mode = "combine",
+    })
+  end
+end
+
 local offset = 0
 
-function View:showitems()
-  local indent = vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1
-  local prefix = (" "):rep(indent)
+function View:updateoffset()
+  self.picker:fix()
+  if self.picker.idx == 0 then
+    offset = 0
+    return
+  end
 
-  local _offset = math.max(0, self.picker.idx - (self.win.height - 1))
+  local _offset = self.picker.idx - maxlistheight
   if _offset > offset then
     offset = _offset
   elseif self.picker.idx <= offset then
-    offset = math.max(0, self.picker.idx - 1)
+    offset = self.picker.idx - 1
   end
+
+  offset = math.min(math.max(0, offset), math.max(0, #self.picker.matches - maxlistheight))
+end
+
+function View:showmatches()
+  local indent = vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1
+  local prefix = (" "):rep(indent)
+
+  self:updateoffset()
 
   local lines = {} ---@type string[]
   local hls = {}
-  for i = 1 + offset, math.min(#self.picker.items, self.win.height - 1 + offset) do
-    lines[#lines + 1] = ("%s%s"):format(prefix, self.picker.items[i][1])
-    hls[#hls + 1] = self.picker.items[i][2]
+  for i = 1 + offset, math.min(#self.picker.matches, maxlistheight + offset) do
+    local match = self.picker.matches[i]
+    lines[#lines + 1] = ("%s%s"):format(prefix, self.picker.items[match[1]].text)
+    hls[#hls + 1] = match[2]
   end
   cmdline.erow = cmdline.srow + #lines
   vim.api.nvim_buf_set_lines(ext.bufs.cmd, cmdline.srow, cmdline.erow, false, lines)
@@ -330,13 +380,7 @@ function View:showitems()
   for i = 1, #hls do
     for j = 1, #hls[i] do
       local col = indent + hls[i][j]
-      vim.api.nvim_buf_set_extmark(
-        ext.bufs.cmd,
-        view_ns,
-        cmdline.srow + i - 1,
-        col,
-        vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 })
-      )
+      self:mark(cmdline.srow + i - 1, col, vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 }))
     end
   end
 end
@@ -352,12 +396,24 @@ function View:hlselect()
     return
   end
 
-  self.select_ext = vim.api.nvim_buf_set_extmark(ext.bufs.cmd, view_ns, cmdline.srow + idx - offset - 1, 0, {
-    virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
-    hl_mode = "combine",
-    virt_text_pos = "overlay",
-    line_hl_group = "ArtioSel",
-  })
+  self:updateoffset()
+  local row = math.max(0, math.min(cmdline.srow + (idx - offset), cmdline.erow) - 1)
+  if row == promptidx then
+    return
+  end
+
+  do
+    local ok, result = self:mark(row, 0, {
+      virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
+      hl_mode = "combine",
+      virt_text_pos = "overlay",
+      line_hl_group = "ArtioSel",
+      invalidate = true,
+    })
+    if ok then
+      self.select_ext = result
+    end
+  end
 end
 
 return View
