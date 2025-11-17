@@ -10,7 +10,7 @@ local artio = lzrq("artio")
 
 local builtins = {}
 
-local findprg = "fd -p -t f --color=never"
+local findprg = "fd -H -p -t f --color=never"
 
 local function find_files(match)
   if not findprg then
