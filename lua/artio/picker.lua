@@ -26,6 +26,7 @@ function Picker:new(props)
   vim.validate("on_close", props.on_close, "function")
 
   local t = vim.tbl_deep_extend("force", {
+    closed = false,
     prompt = "",
     idx = 1,
     items = {},
@@ -62,17 +63,17 @@ function Picker:open()
   local accepted
   local cancelled
 
-  local view = View:new()
-  view.picker = self
+  self.view = View:new()
+  self.view.picker = self
 
   coroutine.wrap(function()
-    view:open()
+    self.view:open()
 
     local co, ismain = coroutine.running()
     assert(not ismain, "must be called from a coroutine")
 
-    local key_ns = vim.on_key(function(_, typed)
-      if view.closed then
+    self.key_ns = vim.on_key(function(_, typed)
+      if self.view.closed then
         coroutine.resume(co)
         return
       end
@@ -80,13 +81,13 @@ function Picker:open()
       typed = string.lower(vim.fn.keytrans(typed))
       if typed == "<down>" then
         self.idx = self.idx + 1
-        view:showmatches()
-        view:hlselect()
+        self.view:showmatches()
+        self.view:hlselect()
         return ""
       elseif typed == "<up>" then
         self.idx = self.idx - 1
-        view:showmatches()
-        view:hlselect()
+        self.view:showmatches()
+        self.view:hlselect()
         return ""
       elseif typed == "<cr>" then
         accepted = true
@@ -101,8 +102,7 @@ function Picker:open()
 
     coroutine.yield()
 
-    vim.on_key(nil, key_ns)
-    view:close()
+    self:close()
 
     if cancelled or not accepted then
       return
@@ -117,6 +117,19 @@ function Picker:open()
 
     self.on_close(item.v, item.id)
   end)()
+end
+
+function Picker:close()
+  if self.closed then
+    return
+  end
+
+  vim.on_key(nil, self.key_ns)
+  if self.view then
+    self.view:close()
+  end
+
+  self.closed = true
 end
 
 function Picker:fix()

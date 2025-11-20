@@ -68,6 +68,10 @@ end
 ---@param ... artio.Picker.proto
 artio.pick = function(...)
   local Picker = require("artio.picker")
+  if artio.active_picker then
+    artio.active_picker:close()
+  end
+  artio.active_picker = Picker
   return Picker:new(...):open()
 end
 
