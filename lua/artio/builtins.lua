@@ -51,6 +51,9 @@ builtins.files = function()
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v)
     end or nil,
+    preview_item = function(item)
+      return vim.fn.bufadd(item)
+    end,
   })
 end
 
@@ -100,6 +103,9 @@ builtins.buffers = function()
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", vim.api.nvim_buf_get_name(item.v))
     end or nil,
+    preview_item = function(item)
+      return item
+    end,
   })
 end
 

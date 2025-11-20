@@ -53,6 +53,7 @@ end
 ---@field picker artio.Picker
 ---@field closed boolean
 ---@field win artio.View.win
+---@field preview_win integer
 local View = {}
 View.__index = View
 
@@ -244,6 +245,7 @@ function View:close()
   end
   self.closed = true
   cmdline.cmdline_show = self.prev_show
+  self:closepreview()
   vim.schedule(function()
     vim.cmd.stopinsert()
     self:revertopts()
@@ -427,6 +429,8 @@ function View:hlselect()
     vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.select_ext)
   end
 
+  self:softupdatepreview()
+
   self.picker:fix()
   local idx = self.picker.idx
   if idx == 0 then
@@ -451,6 +455,75 @@ function View:hlselect()
       self.select_ext = result
     end
   end
+end
+
+function View:togglepreview()
+  if self.preview_win then
+    self:closepreview()
+    return
+  end
+
+  self:updatepreview()
+end
+
+---@return integer
+---@return fun(win: integer)?
+function View:openpreview()
+  if self.picker.idx == 0 then
+    return -1
+  end
+
+  local match = self.picker.matches[self.picker.idx]
+  local item = self.picker.items[match[1]]
+
+  if not item or not (self.picker.preview_item and vim.is_callable(self.picker.preview_item)) then
+    return -1
+  end
+
+  return self.picker.preview_item(item.v)
+end
+
+function View:updatepreview()
+  local buf, on_win = self:openpreview()
+  if buf < 0 then
+    return
+  end
+
+  if not self.preview_win then
+    self.preview_win = vim.api.nvim_open_win(buf, false, vim.tbl_extend("force", self.picker.win.preview_opts(self), {
+      relative = "editor",
+      style = "minimal",
+    }))
+  else
+    vim.api.nvim_win_set_buf(self.preview_win, buf)
+  end
+
+  vim.api.nvim_set_option_value("previewwindow", true, { scope = "local", win = self.preview_win })
+
+  if on_win and vim.is_callable(on_win) then
+    on_win(self.preview_win)
+  end
+end
+
+function View:softupdatepreview()
+  if self.picker.idx == 0 then
+    self:closepreview()
+  end
+
+  if not self.preview_win then
+    return
+  end
+
+  self:updatepreview()
+end
+
+function View:closepreview()
+  if not self.preview_win then
+    return
+  end
+
+  vim.api.nvim_win_close(self.preview_win, true)
+  self.preview_win = nil
 end
 
 return View

@@ -3,11 +3,12 @@ local View = require("artio.view")
 ---@alias artio.Picker.item { id: integer, v: string, text: string, icon?: string, icon_hl?: string }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
 
----@class artio.Picker.proto
+---@class artio.Picker.proto<T>
 ---@field items? artio.Picker.item[]
 ---@field fn? fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@field on_close? fun(text: string, idx: integer)
 ---@field format_item? fun(item: string): string
+---@field preview_item? fun(item: string): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field opts? artio.config.opts
 ---@field win? artio.config.win
@@ -99,6 +100,9 @@ function Picker:open()
       elseif typed == "<esc>" then
         cancelled = true
         coroutine.resume(co)
+        return ""
+      elseif typed == "<c-l>" then
+        self.view:togglepreview()
         return ""
       end
     end)

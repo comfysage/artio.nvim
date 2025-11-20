@@ -16,6 +16,7 @@
 ---@class artio.config.win
 ---@field height? integer|number
 ---@field hidestatusline? boolean
+---@field preview_opts? fun(view: artio.View): vim.api.keyset.win_config
 
 local M = {}
 
@@ -30,11 +31,19 @@ M.default = {
     promptprefix = "",
     prompt_title = true,
     pointer = "",
-    use_icons = package.loaded['mini.icons'] and true or false,
+    use_icons = package.loaded["mini.icons"] and true or false,
   },
   win = {
     height = 0.4,
     hidestatusline = false, -- works best with laststatus=3
+    preview_opts = function(view)
+      return {
+        width = vim.o.columns,
+        height = view.win.height,
+        col = 0,
+        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == 'none' and 0 or 2),
+      }
+    end,
   },
 }
 
