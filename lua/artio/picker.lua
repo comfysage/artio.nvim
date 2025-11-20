@@ -34,7 +34,9 @@ function Picker:new(props)
     matches = {},
   }, require("artio.config").get(), props)
 
-  t.prompttext = t.prompttext or ("%s %s"):format(t.prompt, t.opts.promptprefix)
+  if not t.prompttext then
+    t.prompttext = t.opts.prompt_title and ("%s %s"):format(t.prompt, t.opts.promptprefix) or t.opts.promptprefix
+  end
 
   t.items = vim
     .iter(ipairs(t.items))

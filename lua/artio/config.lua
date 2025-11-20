@@ -9,6 +9,7 @@
 ---@field bottom boolean
 ---@field shrink boolean
 ---@field promptprefix string
+---@field prompt_title boolean
 ---@field pointer string
 ---@field use_icons boolean
 
@@ -27,6 +28,7 @@ M.default = {
     bottom = true,
     shrink = true,
     promptprefix = "",
+    prompt_title = true,
     pointer = "",
     use_icons = package.loaded['mini.icons'] and true or false,
   },

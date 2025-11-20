@@ -40,6 +40,7 @@ require("artio").setup({
     bottom = true, -- whether to draw the prompt at the bottom
     shrink = true, -- whether the window should shrink to fit the matches
     promptprefix = "", -- prefix for the prompt
+    prompt_title = true, -- whether to draw the prompt title
     pointer = "", -- pointer for the selected match
     use_icons = true, -- requires mini.icons
   },
