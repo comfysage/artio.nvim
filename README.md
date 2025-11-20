@@ -12,6 +12,7 @@ Requires Neovim `>= 0.12`
 - Lightweight picker window built on Neovim's extui
 - Prompt + list UI components - minimal and focused
 - Fuzzy filtering using matchfuzzy (built-in)
+- Icon support for common filetypes through [mini.icons](https://github.com/echasnovski/mini.nvim) _(optional)_
 - No heavy dependencies - pure Lua
 
 ## installation
@@ -39,6 +40,7 @@ require("artio").setup({
     bottom = true,
     promptprefix = "",
     pointer = "",
+    use_icons = true, -- requires mini.icons
   },
   win = {
     height = 12,

@@ -9,6 +9,7 @@
 ---@field bottom boolean
 ---@field promptprefix string
 ---@field pointer string
+---@field use_icons boolean
 
 ---@class artio.config.win
 ---@field height? integer|number
@@ -25,6 +26,7 @@ M.default = {
     bottom = true,
     promptprefix = "",
     pointer = "",
+    use_icons = package.loaded['mini.icons'] and true or false,
   },
   win = {
     height = 12,

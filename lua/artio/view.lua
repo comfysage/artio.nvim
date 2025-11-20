@@ -361,26 +361,56 @@ function View:updateoffset()
   offset = math.min(math.max(0, offset), math.max(0, #self.picker.matches - maxlistheight))
 end
 
+local icon_pad = 2
+
 function View:showmatches()
   local indent = vim.fn.strdisplaywidth(self.picker.opts.pointer) + 1
   local prefix = (" "):rep(indent)
+  local icon_pad_str = (" "):rep(icon_pad)
 
   self:updateoffset()
 
   local lines = {} ---@type string[]
   local hls = {}
+  local icons = {} ---@type ([string, string]|false)[]
   for i = 1 + offset, math.min(#self.picker.matches, maxlistheight + offset) do
     local match = self.picker.matches[i]
-    lines[#lines + 1] = ("%s%s"):format(prefix, self.picker.items[match[1]].text)
+    local item = self.picker.items[match[1]]
+
+    local icon, icon_hl = item.icon, item.icon_hl
+    if not (icon and icon_hl) and vim.is_callable(self.picker.get_icon) then
+      icon, icon_hl = self.picker.get_icon(item)
+      item.icon, item.icon_hl = icon, icon_hl
+    end
+    icons[#icons + 1] = icon and { icon, icon_hl } or false
+    icon = icon and ("%s%s"):format(item.icon, icon_pad_str) or ""
+
+    lines[#lines + 1] = ("%s%s%s"):format(prefix, icon, item.text)
     hls[#hls + 1] = match[2]
   end
   cmdline.erow = cmdline.srow + #lines
   vim.api.nvim_buf_set_lines(ext.bufs.cmd, cmdline.srow, cmdline.erow, false, lines)
 
-  for i = 1, #hls do
-    for j = 1, #hls[i] do
-      local col = indent + hls[i][j]
-      self:mark(cmdline.srow + i - 1, col, vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 }))
+  for i = 1, #lines do
+    local has_icon = icons[i] and icons[i][1] and true
+    local icon_indent = has_icon and (#icons[i][1] + icon_pad) or 0
+
+    if has_icon and icons[i][2] then
+      self:mark(
+        cmdline.srow + i - 1,
+        indent,
+        vim.tbl_extend("force", ext_match_opts, {
+          end_col = indent + icon_indent,
+          hl_group = icons[i][2],
+        })
+      )
+    end
+
+    if hls[i] then
+      for j = 1, #hls[i] do
+        local col = indent + icon_indent + hls[i][j]
+        self:mark(cmdline.srow + i - 1, col, vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 }))
+      end
     end
   end
 end

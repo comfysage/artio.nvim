@@ -7,6 +7,7 @@ local function lzrq(modname)
 end
 
 local artio = lzrq("artio")
+local config = lzrq("artio.config")
 
 local builtins = {}
 
@@ -47,6 +48,9 @@ builtins.files = function()
         vim.cmd.edit(text)
       end)
     end,
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", item.v)
+    end or nil,
   })
 end
 
@@ -92,7 +96,11 @@ builtins.buffers = function()
     vim.schedule(function()
       vim.cmd.buffer(bufnr)
     end)
-  end)
+  end, {
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", vim.api.nvim_buf_get_name(item.v))
+    end or nil,
+  })
 end
 
 return builtins
