@@ -7,6 +7,7 @@
 ---@class artio.config.opts
 ---@field preselect boolean
 ---@field bottom boolean
+---@field shrink boolean
 ---@field promptprefix string
 ---@field pointer string
 ---@field use_icons boolean
@@ -24,6 +25,7 @@ M.default = {
   opts = {
     preselect = true,
     bottom = true,
+    shrink = true,
     promptprefix = "",
     pointer = "",
     use_icons = package.loaded['mini.icons'] and true or false,

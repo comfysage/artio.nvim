@@ -38,6 +38,7 @@ require("artio").setup({
   opts = {
     preselect = true,
     bottom = true,
+    shrink = true, -- whether the window should shrink to fit the matches
     promptprefix = "",
     pointer = "",
     use_icons = true, -- requires mini.icons

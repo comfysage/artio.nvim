@@ -389,6 +389,12 @@ function View:showmatches()
     lines[#lines + 1] = ("%s%s%s"):format(prefix, icon, item.text)
     hls[#hls + 1] = match[2]
   end
+
+  if not self.picker.opts.shrink then
+    for _ = 1, (maxlistheight - #lines) do
+      lines[#lines + 1] = ""
+    end
+  end
   cmdline.erow = cmdline.srow + #lines
   vim.api.nvim_buf_set_lines(ext.bufs.cmd, cmdline.srow, cmdline.erow, false, lines)
 
