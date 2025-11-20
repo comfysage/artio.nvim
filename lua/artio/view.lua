@@ -338,6 +338,7 @@ function View:drawprompt()
       },
       virt_text_pos = "eol_right_align",
       hl_mode = "combine",
+      invalidate = true,
     })
   end
 end
