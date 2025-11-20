@@ -36,11 +36,11 @@ vim.pack.add({ src = "https://github.com/comfysage/artio.nvim" })
 ```lua
 require("artio").setup({
   opts = {
-    preselect = true,
-    bottom = true,
+    preselect = true, -- whether to preselect the first match
+    bottom = true, -- whether to draw the prompt at the bottom
     shrink = true, -- whether the window should shrink to fit the matches
-    promptprefix = "",
-    pointer = "",
+    promptprefix = "", -- prefix for the prompt
+    pointer = "", -- pointer for the selected match
     use_icons = true, -- requires mini.icons
   },
   win = {
