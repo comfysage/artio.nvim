@@ -33,7 +33,7 @@ M.default = {
     use_icons = package.loaded['mini.icons'] and true or false,
   },
   win = {
-    height = 12,
+    height = 0.4,
     hidestatusline = false, -- works best with laststatus=3
   },
 }

@@ -148,7 +148,7 @@ end
 local maxlistheight = 0 -- Max height of the matches list (`self.win.height - 1`)
 
 function View:on_resized()
-  if self.picker.win.height > 0 then
+  if self.picker.win.height > 1 then
     self.win.height = self.picker.win.height
   else
     self.win.height = vim.o.lines * self.picker.win.height
