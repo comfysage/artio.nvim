@@ -13,7 +13,7 @@ local artio = {}
 ---@param cfg? artio.config
 artio.setup = function(cfg)
   cfg = cfg or {}
-  config.set(config.override(cfg))
+  config.set(cfg)
 end
 
 ---@param lst artio.Picker.item[]
