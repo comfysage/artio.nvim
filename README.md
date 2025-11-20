@@ -52,4 +52,6 @@ require("artio").setup({
 vim.ui.select = require("artio").select
 
 vim.keymap.set("n", "<leader><leader>", "<Plug>(artio-files)")
+vim.keymap.set("n", "<leader>fh", "<Plug>(artio-helptags)")
+vim.keymap.set("n", "<leader>fb", "<Plug>(artio-buffers)")
 ```
