@@ -28,7 +28,7 @@ function Picker:new(props)
   local t = vim.tbl_deep_extend("force", {
     closed = false,
     prompt = "",
-    idx = 1,
+    idx = 0,
     items = {},
     matches = {},
   }, require("artio.config").get(), props)
