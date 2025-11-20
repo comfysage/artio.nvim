@@ -43,8 +43,9 @@ end
 ---@param items T[] Arbitrary items
 ---@param opts vim.ui.select.Opts Additional options
 ---@param on_choice fun(item: T|nil, idx: integer|nil)
-artio.select = function(items, opts, on_choice)
-  return artio.generic(items, {
+---@param start_opts? artio.Picker.proto
+artio.select = function(items, opts, on_choice, start_opts)
+  return artio.generic(items, vim.tbl_deep_extend("force", {
     prompt = opts.prompt,
     on_close = function(_, idx)
       return on_choice(items[idx], idx)
@@ -52,7 +53,7 @@ artio.select = function(items, opts, on_choice)
     format_item = opts.format_item and function(item)
       return opts.format_item(item)
     end or nil,
-  })
+  }, start_opts or {}))
 end
 
 ---@generic T
