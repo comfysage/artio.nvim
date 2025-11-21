@@ -142,6 +142,9 @@ end
 
 function Picker:getmatches(input)
   self.matches = self.fn(self.items, input)
+  table.sort(self.matches, function(a, b)
+    return a[3] > b[3]
+  end)
 end
 
 return Picker
