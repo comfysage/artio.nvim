@@ -57,6 +57,34 @@ builtins.files = function()
   })
 end
 
+local function find_oldfiles()
+  return vim
+    .iter(vim.v.oldfiles)
+    :filter(function(v)
+      return vim.uv.fs_stat(v) --[[@as boolean]]
+    end)
+    :totable()
+end
+
+builtins.oldfiles = function()
+  local lst = find_oldfiles()
+
+  return artio.generic(lst, {
+    prompt = "oldfiles",
+    on_close = function(text, _)
+      vim.schedule(function()
+        vim.cmd.edit(text)
+      end)
+    end,
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", item.v)
+    end or nil,
+    preview_item = function(item)
+      return vim.fn.bufadd(item)
+    end,
+  })
+end
+
 builtins.livegrep = function()
   local win = vim.api.nvim_get_current_win()
   local buf = vim.api.nvim_win_get_buf(win)
