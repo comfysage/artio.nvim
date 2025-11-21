@@ -57,6 +57,40 @@ builtins.files = function()
   })
 end
 
+builtins.livegrep = function()
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_win_get_buf(win)
+  local n = vim.api.nvim_buf_line_count(buf)
+  local lst = {} ---@type integer[]
+  for i = 1, n do
+    lst[#lst + 1] = i
+  end
+
+  local pad = #tostring(lst[#lst])
+
+  return artio.generic(lst, {
+    prompt = "livegrep",
+    on_close = function(row, _)
+      vim.schedule(function()
+        vim.api.nvim_win_set_cursor(win, { row, 0 })
+      end)
+    end,
+    format_item = function(row)
+      return vim.api.nvim_buf_get_lines(buf, row - 1, row, true)[1]
+    end,
+    preview_item = function(row)
+      return buf, function(w)
+        vim.api.nvim_set_option_value('cursorline', true, { scope = 'local', win = w })
+        vim.api.nvim_win_set_cursor(w, { row, 0 })
+      end
+    end,
+    get_icon = function(row)
+      local v = tostring(row.v)
+      return ("%s%s"):format((" "):rep(pad - #v), v)
+    end,
+  })
+end
+
 local function find_helptags()
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].buftype = "help"
