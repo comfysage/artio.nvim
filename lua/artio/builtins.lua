@@ -176,7 +176,27 @@ builtins.buffers = function()
   })
 end
 
+---@param currentfile string
+---@param item string
+---@return integer score
+local function matchproximity(currentfile, item)
+  item = vim.fs.abspath(item)
+
+  return vim.iter(ipairs(vim.split(item, "/", { trimempty = true }))):fold(0, function(score, i, part)
+    if part == currentfile[i] then
+      return score + 50
+    end
+    return score
+  end)
+end
+
+--- uses the regular files picker as a base
+--- - boosts items in the bufferlist
+--- - proportionally boosts items that match closely to the current file in proximity within the filesystem
 builtins.smart = function()
+  local currentfile = vim.api.nvim_buf_get_name(0)
+  currentfile = vim.fs.abspath(currentfile)
+
   local lst = find_files()
 
   local pwd = vim.fn.getcwd()
@@ -201,6 +221,13 @@ builtins.smart = function()
         .iter(l)
         :map(function(v)
           return { v.id, {}, vim.tbl_contains(recentlst, v.text) and 100 or 0 }
+        end)
+        :totable()
+    end, function(l, _)
+      return vim
+        .iter(l)
+        :map(function(v)
+          return { v.id, {}, matchproximity(currentfile, v.text) }
         end)
         :totable()
     end),
