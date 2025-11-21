@@ -175,4 +175,46 @@ builtins.buffers = function()
   })
 end
 
+builtins.smart = function()
+  local lst = find_files()
+
+  local pwd = vim.fn.getcwd()
+  local recentlst = vim
+    .iter(find_buffers())
+    :map(function(buf)
+      local v = vim.api.nvim_buf_get_name(buf)
+      return vim.fs.relpath(pwd, v) or v
+    end)
+    :totable()
+
+  return artio.pick({
+    prompt = "smart",
+    items = vim.tbl_keys(vim.iter({ lst, recentlst }):fold({}, function(items, l)
+      for i = 1, #l do
+        items[l[i]] = true
+      end
+      return items
+    end)),
+    fn = artio.mergesorters(artio.sorter, function(l, _)
+      return vim
+        .iter(l)
+        :map(function(v)
+          return { v.id, {}, vim.tbl_contains(recentlst, v.text) and 100 or 0 }
+        end)
+        :totable()
+    end),
+    on_close = function(text, _)
+      vim.schedule(function()
+        vim.cmd.edit(text)
+      end)
+    end,
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", item.v)
+    end or nil,
+    preview_item = function(item)
+      return vim.fn.bufadd(item)
+    end,
+  })
+end
+
 return builtins
