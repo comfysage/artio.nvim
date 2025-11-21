@@ -16,9 +16,56 @@ artio.setup = function(cfg)
   config.set(cfg)
 end
 
----@param lst artio.Picker.item[]
----@param input string
----@return artio.Picker.match[]
+---@param a integer[]
+---@param ... integer[]
+---@return integer[]
+local function mergehl(a, ...)
+  local hl_lists = { a, ... }
+
+  local t = vim.iter(hl_lists):fold({}, function(hls, hl_list)
+    for i = 1, #hl_list do
+      hls[hl_list[i]] = true
+    end
+    return hls
+  end)
+  return vim.tbl_keys(t)
+end
+
+---@param a artio.Picker.sorter
+---@param ... artio.Picker.sorter
+---@return artio.Picker.sorter
+function artio.mergesorters(a, ...)
+  local sorters = { ... } ---@type artio.Picker.sorter[]
+
+  return function(lst, input)
+    local basematches = a(lst, input)
+
+    return vim.iter(sorters):fold(basematches, function(oldmatches, sorter)
+      ---@type artio.Picker.match[]
+      local newmatches = sorter(lst, input)
+
+      return vim.iter(newmatches):fold(oldmatches, function(matches, newmatch)
+        local oldmatchidx
+        for i = 1, #matches do
+          if lst[matches[i][1]] == lst[newmatch[1]] then
+            oldmatchidx = i
+            break
+          end
+        end
+
+        if oldmatchidx then
+          local oldmatch = matches[oldmatchidx]
+          matches[oldmatchidx] = { oldmatch[1], mergehl(oldmatch[2], newmatch[2]), oldmatch[3] + newmatch[3] }
+        else
+          matches[#matches + 1] = newmatch
+        end
+        return matches
+      end)
+    end)
+  end
+end
+
+---@type artio.Picker.sorter
 artio.sorter = function(lst, input)
   if not lst or #lst == 0 then
     return {}

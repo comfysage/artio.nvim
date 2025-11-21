@@ -2,10 +2,11 @@ local View = require("artio.view")
 
 ---@alias artio.Picker.item { id: integer, v: string, text: string, icon?: string, icon_hl?: string }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
+---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 
 ---@class artio.Picker.proto<T>
 ---@field items? artio.Picker.item[]
----@field fn? fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
+---@field fn? artio.Picker.sorter
 ---@field on_close? fun(text: string, idx: integer)
 ---@field format_item? fun(item: string): string
 ---@field preview_item? fun(item: string): integer, fun(win: integer)
