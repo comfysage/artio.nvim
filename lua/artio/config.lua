@@ -41,7 +41,7 @@ M.default = {
         width = vim.o.columns,
         height = view.win.height,
         col = 0,
-        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == 'none' and 0 or 2),
+        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == "none" and 0 or 2),
       }
     end,
   },

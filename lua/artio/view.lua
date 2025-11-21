@@ -490,10 +490,14 @@ function View:updatepreview()
   end
 
   if not self.preview_win then
-    self.preview_win = vim.api.nvim_open_win(buf, false, vim.tbl_extend("force", self.picker.win.preview_opts(self), {
-      relative = "editor",
-      style = "minimal",
-    }))
+    self.preview_win = vim.api.nvim_open_win(
+      buf,
+      false,
+      vim.tbl_extend("force", self.picker.win.preview_opts(self), {
+        relative = "editor",
+        style = "minimal",
+      })
+    )
   else
     vim.api.nvim_win_set_buf(self.preview_win, buf)
   end

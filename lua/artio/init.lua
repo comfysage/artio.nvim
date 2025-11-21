@@ -92,15 +92,18 @@ end
 ---@param on_choice fun(item: T|nil, idx: integer|nil)
 ---@param start_opts? artio.Picker.proto
 artio.select = function(items, opts, on_choice, start_opts)
-  return artio.generic(items, vim.tbl_deep_extend("force", {
-    prompt = opts.prompt,
-    on_close = function(_, idx)
-      return on_choice(items[idx], idx)
-    end,
-    format_item = opts.format_item and function(item)
-      return opts.format_item(item)
-    end or nil,
-  }, start_opts or {}))
+  return artio.generic(
+    items,
+    vim.tbl_deep_extend("force", {
+      prompt = opts.prompt,
+      on_close = function(_, idx)
+        return on_choice(items[idx], idx)
+      end,
+      format_item = opts.format_item and function(item)
+        return opts.format_item(item)
+      end or nil,
+    }, start_opts or {})
+  )
 end
 
 ---@generic T

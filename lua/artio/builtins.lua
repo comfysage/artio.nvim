@@ -107,10 +107,11 @@ builtins.livegrep = function()
       return vim.api.nvim_buf_get_lines(buf, row - 1, row, true)[1]
     end,
     preview_item = function(row)
-      return buf, function(w)
-        vim.api.nvim_set_option_value('cursorline', true, { scope = 'local', win = w })
-        vim.api.nvim_win_set_cursor(w, { row, 0 })
-      end
+      return buf,
+        function(w)
+          vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
+          vim.api.nvim_win_set_cursor(w, { row, 0 })
+        end
     end,
     get_icon = function(row)
       local v = tostring(row.v)
