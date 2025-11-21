@@ -54,6 +54,13 @@ require("artio").setup({
 vim.ui.select = require("artio").select
 
 vim.keymap.set("n", "<leader><leader>", "<Plug>(artio-files)")
+vim.keymap.set("n", "<leader>fg", "<Plug>(artio-livegrep)")
+
+-- smart file picker
+vim.keymap.set("n", "<leader>ff", "<Plug>(artio-smart)")
+
+-- general built-in pickers
 vim.keymap.set("n", "<leader>fh", "<Plug>(artio-helptags)")
 vim.keymap.set("n", "<leader>fb", "<Plug>(artio-buffers)")
+vim.keymap.set("n", "<leader>fo", "<Plug>(artio-oldfiles)")
 ```

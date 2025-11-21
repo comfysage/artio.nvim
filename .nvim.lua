@@ -7,7 +7,6 @@ vim.cmd([[ set rtp^=. ]])
 
 R("artio").setup()
 
-vim.cmd([[ nnoremap <leader>ff <Plug>(artio-files) ]])
 vim.cmd([[ noremap <leader>r <cmd>restart<cr> ]])
 
 vim.ui.select = function(...)
