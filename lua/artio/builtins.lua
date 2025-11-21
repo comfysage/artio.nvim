@@ -144,13 +144,17 @@ builtins.helptags = function()
   })
 end
 
-builtins.buffers = function()
-  local lst = vim
+local function find_buffers()
+  return vim
     .iter(vim.api.nvim_list_bufs())
     :filter(function(bufnr)
       return vim.api.nvim_buf_is_valid(bufnr) and vim.bo[bufnr].buflisted
     end)
     :totable()
+end
+
+builtins.buffers = function()
+  local lst = find_buffers()
 
   return artio.select(lst, {
     prompt = "buffers",
