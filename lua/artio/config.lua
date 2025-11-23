@@ -34,7 +34,7 @@ M.default = {
     prompt_title = true,
     pointer = "",
     marker = "│",
-    use_icons = package.loaded["mini.icons"] and true or false,
+    use_icons = _G["MiniIcons"] and true or false,
   },
   win = {
     height = 0.4,
