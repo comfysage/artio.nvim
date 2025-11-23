@@ -245,4 +245,20 @@ builtins.smart = function()
   })
 end
 
+builtins.colorschemes = function()
+  local files = vim.api.nvim_get_runtime_file("colors/*.{vim,lua}", true)
+  local lst = vim.tbl_map(function(f)
+    return vim.fs.basename(f):gsub("%.[^.]+$", "")
+  end, files)
+
+  return artio.generic(lst, {
+    prompt = "colorschemes",
+    on_close = function(text, _)
+      vim.schedule(function()
+        vim.cmd.colorscheme(text)
+      end)
+    end,
+  })
+end
+
 return builtins
