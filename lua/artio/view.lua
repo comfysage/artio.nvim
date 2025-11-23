@@ -368,11 +368,14 @@ function View:setlines(posstart, posend, lines)
 end
 
 local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
----@type vim.api.keyset.set_extmark
-local ext_match_opts = {
-  hl_group = "ArtioMatch",
-  hl_mode = "combine",
-  invalidate = true,
+local ext_priority = {
+  prompt = 1,
+  info = 2,
+  select = 4,
+  marker = 8,
+  hl = 16,
+  icon = 32,
+  match = 64,
 }
 
 ---@param line integer 0-based
@@ -380,12 +383,15 @@ local ext_match_opts = {
 ---@param opts vim.api.keyset.set_extmark
 ---@return integer
 function View:mark(line, col, opts)
+  opts.hl_mode = "combine"
+  opts.invalidate = true
+
   local ok, result
   vim._with({ noautocmd = true }, function()
     ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
   end)
   if not ok then
-    vim.notify(("Failed to add extmark %d:%d"):format(line, col), vim.log.levels.ERROR)
+    vim.notify(("Failed to add extmark %d:%d\n\t%s"):format(line, col, result), vim.log.levels.ERROR)
     return -1
   end
 
@@ -394,7 +400,7 @@ end
 
 function View:drawprompt()
   if promptlen > 0 and prompthl_id > 0 then
-    self:mark(promptidx, 0, { hl_group = prompthl_id, end_col = promptlen })
+    self:mark(promptidx, 0, { hl_group = prompthl_id, end_col = promptlen, priority = ext_priority.prompt })
     self:mark(promptidx, 0, {
       virt_text = {
         {
@@ -403,8 +409,7 @@ function View:drawprompt()
         },
       },
       virt_text_pos = "eol_right_align",
-      hl_mode = "combine",
-      invalidate = true,
+      priority = ext_priority.info,
     })
   end
 end
@@ -480,44 +485,41 @@ function View:showmatches()
     local icon_indent = has_icon and (#icons[i][1] + icon_pad) or 0
 
     if has_icon and icons[i][2] then
-      self:mark(
-        cmdline.srow + i - 1,
-        indent,
-        vim.tbl_extend("force", ext_match_opts, {
-          end_col = indent + icon_indent,
-          hl_group = icons[i][2],
-        })
-      )
+      self:mark(cmdline.srow + i - 1, indent, {
+        end_col = indent + icon_indent,
+        hl_group = icons[i][2],
+        priority = ext_priority.icon,
+      })
     end
 
     local line_hls = custom_hls[i]
     if line_hls then
       for j = 1, #line_hls do
         local hl = line_hls[j]
-        self:mark(
-          cmdline.srow + i - 1,
-          indent + icon_indent + hl[1][1],
-          vim.tbl_extend("force", ext_match_opts, {
-            end_col = indent + icon_indent + hl[1][2],
-            hl_group = hl[2],
-          })
-        )
+        self:mark(cmdline.srow + i - 1, indent + icon_indent + hl[1][1], {
+          end_col = indent + icon_indent + hl[1][2],
+          hl_group = hl[2],
+          priority = ext_priority.hl,
+        })
       end
     end
 
     if marks[i] then
       self:mark(cmdline.srow + i - 1, indent - 1, {
         virt_text = { { self.picker.opts.marker, "ArtioMarker" } },
-        hl_mode = "combine",
         virt_text_pos = "overlay",
-        invalidate = true,
+        priority = ext_priority.marker,
       })
     end
 
     if hls[i] then
       for j = 1, #hls[i] do
         local col = indent + icon_indent + hls[i][j]
-        self:mark(cmdline.srow + i - 1, col, vim.tbl_extend("force", ext_match_opts, { end_col = col + 1 }))
+        self:mark(cmdline.srow + i - 1, col, {
+          hl_group = "ArtioMatch",
+          end_col = col + 1,
+          priority = ext_priority.match,
+        })
       end
     end
   end
@@ -544,17 +546,19 @@ function View:hlselect()
     return
   end
 
-  do
-    local extid = self:mark(row, 0, {
-      virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
-      hl_mode = "combine",
-      virt_text_pos = "overlay",
-      line_hl_group = "ArtioSel",
-      invalidate = true,
-    })
-    if extid ~= -1 then
-      self.select_ext = extid
-    end
+  local extid = self:mark(row, 0, {
+    virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
+    virt_text_pos = "overlay",
+
+    hl_group = "ArtioSel",
+    hl_eol = true,
+    end_row = row + 1,
+    end_col = 0,
+
+    priority = ext_priority.select,
+  })
+  if extid ~= -1 then
+    self.select_ext = extid
   end
 end
 
