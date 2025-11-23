@@ -182,6 +182,12 @@ builtins.buffergrep = function(props)
         local v = tostring(row.v)
         return ("%s%s"):format((" "):rep(pad - #v), v)
       end,
+      actions = extend(
+        {},
+        utils.make_setqflistactions(function(item)
+          return { filename = vim.api.nvim_buf_get_name(buf), lnum = item.v }
+        end)
+      ),
     }, props)
   )
 end
