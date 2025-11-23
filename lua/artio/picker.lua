@@ -1,8 +1,9 @@
 local View = require("artio.view")
 
----@alias artio.Picker.item { id: integer, v: string, text: string, icon?: string, icon_hl?: string }
+---@alias artio.Picker.item { id: integer, v: string, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
+---@alias artio.Picker.hl [[integer, integer], string]
 
 ---@class artio.Picker.proto<T>
 ---@field items? artio.Picker.item[]
@@ -11,6 +12,7 @@ local View = require("artio.view")
 ---@field format_item? fun(item: string): string
 ---@field preview_item? fun(item: string): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
+---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
 ---@field opts? artio.config.opts
 ---@field win? artio.config.win
 ---@field prompt? string

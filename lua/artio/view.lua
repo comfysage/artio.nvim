@@ -376,6 +376,7 @@ function View:showmatches()
   local lines = {} ---@type string[]
   local hls = {}
   local icons = {} ---@type ([string, string]|false)[]
+  local custom_hls = {} ---@type (artio.Picker.hl[]|false)[]
   for i = 1 + offset, math.min(#self.picker.matches, maxlistheight + offset) do
     local match = self.picker.matches[i]
     local item = self.picker.items[match[1]]
@@ -387,6 +388,13 @@ function View:showmatches()
     end
     icons[#icons + 1] = icon and { icon, icon_hl } or false
     icon = icon and ("%s%s"):format(item.icon, icon_pad_str) or ""
+
+    local hl = item.hls
+    if not hl and vim.is_callable(self.picker.hl_item) then
+      hl = self.picker.hl_item(item)
+      item.hls = hl
+    end
+    custom_hls[#custom_hls + 1] = hl or false
 
     lines[#lines + 1] = ("%s%s%s"):format(prefix, icon, item.text)
     hls[#hls + 1] = match[2]
@@ -413,6 +421,21 @@ function View:showmatches()
           hl_group = icons[i][2],
         })
       )
+    end
+
+    local line_hls = custom_hls[i]
+    if line_hls then
+      for j = 1, #line_hls do
+        local hl = line_hls[j]
+        self:mark(
+          cmdline.srow + i - 1,
+          indent + hl[1][1],
+          vim.tbl_extend("force", ext_match_opts, {
+            end_col = indent + hl[1][2],
+            hl_group = hl[2],
+          })
+        )
+      end
     end
 
     if hls[i] then
