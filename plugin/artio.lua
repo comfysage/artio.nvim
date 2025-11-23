@@ -53,6 +53,12 @@ end)
 vim.keymap.set("n", "<Plug>(artio-smart)", function()
   return require("artio.builtins").smart()
 end)
+vim.keymap.set("n", "<Plug>(artio-highlights)", function()
+  return require("artio.builtins").highlights()
+end)
+vim.keymap.set("n", "<Plug>(artio-colorschemes)", function()
+  return require("artio.builtins").colorschemes()
+end)
 
 -- == actions ==
 
