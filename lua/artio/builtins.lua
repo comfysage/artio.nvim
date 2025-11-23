@@ -367,7 +367,7 @@ builtins.highlights = function(props)
       return { hl:sub(1, sp - 1), hl }
     end)
     :fold({}, function(t, hl)
-      local pad = math.max(0, math.min(20, maxw) - #hl[1] + 1)
+      local pad = math.max(1, math.min(20, maxw) - #hl[1] + 1)
       t[hl[1]] = string.gsub(hl[2], "%s+", (" "):rep(pad), 1)
       return t
     end)
@@ -385,8 +385,11 @@ builtins.highlights = function(props)
         return hls[hlname]
       end,
       hl_item = function(hlname)
+        local x_start, x_end = string.find(hlname.text, "%sxxx")
+
         return {
           { { 0, #hlname.v }, hlname.v },
+          { { x_start, x_end }, hlname.v },
         }
       end,
     }, props)
