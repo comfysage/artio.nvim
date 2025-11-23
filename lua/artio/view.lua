@@ -312,6 +312,7 @@ local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
 local ext_match_opts = {
   hl_group = "ArtioMatch",
   hl_mode = "combine",
+  invalidate = true,
 }
 
 ---@param line integer 0-based
