@@ -5,7 +5,11 @@ end
 
 vim.cmd([[ set rtp^=. ]])
 
-R("artio").setup()
+vim.api.nvim_create_autocmd("UIEnter", {
+  callback = function()
+    R("artio").setup()
+  end,
+})
 
 vim.cmd([[ noremap <leader>r <cmd>restart<cr> ]])
 
