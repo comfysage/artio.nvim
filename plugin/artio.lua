@@ -26,6 +26,7 @@ vim.api.nvim_create_autocmd("ColorScheme", {
     hi("ArtioPointer", { fg = cursor_hl.bg })
 
     hi("ArtioMatch", { link = "PmenuMatch" })
+    hi("ArtioMarker", { link = "DiagnosticWarn" })
   end,
 })
 
