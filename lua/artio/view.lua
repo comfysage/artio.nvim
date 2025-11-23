@@ -57,8 +57,10 @@ end
 local View = {}
 View.__index = View
 
-function View:new()
+---@param picker artio.Picker
+function View:new(picker)
   return setmetatable({
+    picker = picker,
     closed = false,
     win = {
       height = 0,

@@ -1,16 +1,16 @@
 local View = require("artio.view")
 
----@alias artio.Picker.item { id: integer, v: string, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
+---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@alias artio.Picker.hl [[integer, integer], string]
 
----@class artio.Picker.proto<T>
----@field items? artio.Picker.item[]
----@field fn? artio.Picker.sorter
----@field on_close? fun(text: string, idx: integer)
----@field format_item? fun(item: string): string
----@field preview_item? fun(item: string): integer, fun(win: integer)
+---@class artio.Picker.config
+---@field items artio.Picker.item[]
+---@field fn artio.Picker.sorter
+---@field on_close fun(text: string, idx: integer)
+---@field format_item? fun(item: any): string
+---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
 ---@field opts? artio.config.opts
@@ -19,16 +19,17 @@ local View = require("artio.view")
 ---@field defaulttext? string
 ---@field prompttext? string
 
----@class artio.Picker : artio.Picker.proto
+---@class artio.Picker : artio.Picker.config
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
 local Picker = {}
 Picker.__index = Picker
 
----@param props artio.Picker.proto
+---@param props artio.Picker.config
 function Picker:new(props)
-  vim.validate("fn", props.fn, "function")
-  vim.validate("on_close", props.on_close, "function")
+  vim.validate("Picker.items", props.items, "table")
+  vim.validate("Picker:fn", props.fn, "function")
+  vim.validate("Picker:on_close", props.on_close, "function")
 
   local t = vim.tbl_deep_extend("force", {
     closed = false,
@@ -62,16 +63,10 @@ function Picker:new(props)
 end
 
 function Picker:open()
-  if not self.fn or not self.on_close then
-    vim.notify("Picker must have `fn` and `on_close`", vim.log.levels.ERROR)
-    return
-  end
-
   local accepted
   local cancelled
 
-  self.view = View:new()
-  self.view.picker = self
+  self.view = View:new(self)
 
   coroutine.wrap(function()
     self.view:open()
