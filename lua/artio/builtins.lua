@@ -261,4 +261,40 @@ builtins.colorschemes = function()
   })
 end
 
+builtins.highlights = function()
+  local hlout = vim.split(vim.api.nvim_exec2([[ highlight ]], { output = true }).output, "\n", { trimempty = true })
+
+  local maxw = 0
+
+  local hls = vim
+    .iter(hlout)
+    :map(function(hl)
+      local sp = string.find(hl, "%s", 1)
+      maxw = sp > maxw and sp or maxw
+      return { hl:sub(1, sp - 1), hl }
+    end)
+    :fold({}, function(t, hl)
+      local pad = math.max(0, math.min(20, maxw) - #hl[1] + 1)
+      t[hl[1]] = string.gsub(hl[2], "%s+", (" "):rep(pad), 1)
+      return t
+    end)
+
+  return artio.generic(vim.tbl_keys(hls), {
+    prompt = "highlights",
+    on_close = function(line, _)
+      vim.schedule(function()
+        vim.print(line)
+      end)
+    end,
+    format_item = function(hlname)
+      return hls[hlname]
+    end,
+    hl_item = function(hlname)
+      return {
+        { { 0, #hlname.v }, hlname.v },
+      }
+    end,
+  })
+end
+
 return builtins
