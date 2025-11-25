@@ -31,32 +31,59 @@ local function mergehl(a, ...)
   return vim.tbl_keys(t)
 end
 
+---@param a artio.Picker.match
+---@param b artio.Picker.match
+---@return artio.Picker.match
+local function mergematches(a, b)
+  return { a[1], mergehl(a[2], b[2]), a[3] + b[3] }
+end
+
+---@param strat 'combine'|'intersect'|'base'
+--- combine:
+---   a, b -> a + ab + b
+--- intersect:
+---   a, b -> ab
+--- base:
+---   a, b -> a + ab
 ---@param a artio.Picker.sorter
 ---@param ... artio.Picker.sorter
 ---@return artio.Picker.sorter
-function artio.mergesorters(a, ...)
-  local sorters = { ... } ---@type artio.Picker.sorter[]
+function artio.mergesorters(strat, a, ...)
+  local sorters = { a, ... } ---@type artio.Picker.sorter[]
+
+  ---@generic T
+  ---@param t T[]
+  ---@param cmp fun(T): boolean
+  ---@return integer?
+  local function findi(t, cmp)
+    for i = 1, #t do
+      if t[i] and cmp(t[i]) then
+        return i
+      end
+    end
+  end
 
   return function(lst, input)
-    local basematches = a(lst, input)
-
-    return vim.iter(sorters):fold(basematches, function(oldmatches, sorter)
+    local it = 0
+    return vim.iter(sorters):fold({}, function(oldmatches, sorter)
+      it = it + 1
       ---@type artio.Picker.match[]
       local newmatches = sorter(lst, input)
 
-      return vim.iter(newmatches):fold(oldmatches, function(matches, newmatch)
-        local oldmatchidx
-        for i = 1, #matches do
-          if lst[matches[i][1]] == lst[newmatch[1]] then
-            oldmatchidx = i
-            break
-          end
-        end
+      return vim.iter(newmatches):fold(strat == "intersect" and {} or oldmatches, function(matches, newmatch)
+        local oldmatchidx = findi(oldmatches, function(v)
+          return v[1] == newmatch[1]
+        end)
 
         if oldmatchidx then
-          local oldmatch = matches[oldmatchidx]
-          matches[oldmatchidx] = { oldmatch[1], mergehl(oldmatch[2], newmatch[2]), oldmatch[3] + newmatch[3] }
-        else
+          local oldmatch = oldmatches[oldmatchidx]
+          local next = mergematches(oldmatch, newmatch)
+          if strat == "intersect" then
+            matches[#matches + 1] = next
+          else
+            matches[oldmatchidx] = next
+          end
+        elseif strat == "combine" or it == 1 then
           matches[#matches + 1] = newmatch
         end
         return matches

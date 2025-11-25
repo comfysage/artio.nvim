@@ -216,11 +216,14 @@ builtins.smart = function()
       end
       return items
     end)),
-    fn = artio.mergesorters(artio.sorter, function(l, _)
+    fn = artio.mergesorters("base", artio.sorter, function(l, _)
       return vim
         .iter(l)
         :map(function(v)
-          return { v.id, {}, vim.tbl_contains(recentlst, v.text) and 100 or 0 }
+          if not vim.tbl_contains(recentlst, v.text) then
+            return
+          end
+          return { v.id, {}, 100 }
         end)
         :totable()
     end, function(l, _)
