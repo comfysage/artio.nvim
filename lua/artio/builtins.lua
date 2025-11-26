@@ -11,7 +11,7 @@ local config = lzrq("artio.config")
 
 local builtins = {}
 
-local findprg = "fd -H -p -t f --color=never"
+local findprg = "fd -H -p -t f --color=never --exclude .git"
 
 local function find_files(match)
   if not findprg then
