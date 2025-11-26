@@ -20,7 +20,7 @@ Requires Neovim `>= 0.12`
 `vim.pack`
 
 ```lua
-vim.pack.add({ src = "https://github.com/comfysage/artio.nvim" })
+vim.pack.add({{ src = "https://github.com/comfysage/artio.nvim" }})
 ```
 
 `lazy.nvim`
