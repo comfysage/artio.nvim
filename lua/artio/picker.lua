@@ -5,6 +5,7 @@ local View = require("artio.view")
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@alias artio.Picker.hl [[integer, integer], string]
+---@alias artio.Picker.action fun(self: artio.Picker, co: thread)
 
 ---@class artio.Picker.config
 ---@field items artio.Picker.item[]|string[]
@@ -15,7 +16,7 @@ local View = require("artio.view")
 ---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
----@field actions? artio.Actions
+---@field actions? table<string, artio.Picker.action>
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
@@ -26,6 +27,7 @@ local View = require("artio.view")
 ---@class artio.Picker : artio.Picker.config
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
+---@field actions? artio.Actions
 local Picker = {}
 Picker.__index = Picker
 
@@ -75,8 +77,8 @@ function Picker:new(props)
 
   Picker.getitems(t, "")
 
-  t.actions = t.actions or Actions:new({
-    actions = default_actions,
+  t.actions = Actions:new({
+    actions = vim.tbl_extend("force", default_actions, t.actions or {}),
   })
 
   return setmetatable(t, Picker)
