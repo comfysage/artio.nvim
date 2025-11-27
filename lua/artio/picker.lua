@@ -127,7 +127,10 @@ end
 
 function Picker:getitems(input)
   self.items = self.get_items and self.get_items(input) or self.items
-  if #self.items > 0 and type(self.items[1]) == "string" then
+  if
+    #self.items > 0
+    and (type(self.items[1]) ~= "table" or not (self.items[1].v and self.items[1].id and self.items[1].text))
+  then
     self.items = vim
       .iter(ipairs(self.items))
       :map(function(i, v)
