@@ -9,6 +9,10 @@ end
 local artio = lzrq("artio")
 local config = lzrq("artio.config")
 
+local function extend(t1, t2)
+  return vim.tbl_deep_extend("force", t1, t2)
+end
+
 local function cmd_callback(o)
   local src = o.stderr
   if o.code == 0 then
@@ -43,30 +47,37 @@ local builtins = {}
 
 local findprg = "fd -H -p -t f --color=never"
 
-builtins.files = function()
-  local lst = make_cmd(findprg)()
+builtins.files = function(props)
+  props = props or {}
+  props.findprg = props.findprg or findprg
 
-  return artio.generic(lst, {
-    prompt = "files",
-    on_close = function(text, _)
-      vim.schedule(function()
-        vim.cmd.edit(text)
-      end)
-    end,
-    get_icon = config.get().opts.use_icons and function(item)
-      return require("mini.icons").get("file", item.v)
-    end or nil,
-    preview_item = function(item)
-      return vim.fn.bufadd(item)
-    end,
-  })
+  local lst = make_cmd(props.findprg)()
+
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "files",
+      on_close = function(text, _)
+        vim.schedule(function()
+          vim.cmd.edit(text)
+        end)
+      end,
+      get_icon = config.get().opts.use_icons and function(item)
+        return require("mini.icons").get("file", item.v)
+      end or nil,
+      preview_item = function(item)
+        return vim.fn.bufadd(item)
+      end,
+    }, props)
+  )
 end
 
-builtins.grep = function()
+builtins.grep = function(props)
+  props = props or {}
   local ext = require("vim._extui.shared")
   local grepcmd = make_cmd(vim.o.grepprg)
 
-  return artio.pick({
+  return artio.pick(extend({
     items = {},
     prompt = "grep",
     get_items = function(input)
@@ -107,7 +118,7 @@ builtins.grep = function()
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
-  })
+  }, props))
 end
 
 local function find_oldfiles()
@@ -119,26 +130,31 @@ local function find_oldfiles()
     :totable()
 end
 
-builtins.oldfiles = function()
+builtins.oldfiles = function(props)
+  props = props or {}
   local lst = find_oldfiles()
 
-  return artio.generic(lst, {
-    prompt = "oldfiles",
-    on_close = function(text, _)
-      vim.schedule(function()
-        vim.cmd.edit(text)
-      end)
-    end,
-    get_icon = config.get().opts.use_icons and function(item)
-      return require("mini.icons").get("file", item.v)
-    end or nil,
-    preview_item = function(item)
-      return vim.fn.bufadd(item)
-    end,
-  })
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "oldfiles",
+      on_close = function(text, _)
+        vim.schedule(function()
+          vim.cmd.edit(text)
+        end)
+      end,
+      get_icon = config.get().opts.use_icons and function(item)
+        return require("mini.icons").get("file", item.v)
+      end or nil,
+      preview_item = function(item)
+        return vim.fn.bufadd(item)
+      end,
+    }, props)
+  )
 end
 
-builtins.buffergrep = function()
+builtins.buffergrep = function(props)
+  props = props or {}
   local win = vim.api.nvim_get_current_win()
   local buf = vim.api.nvim_win_get_buf(win)
   local n = vim.api.nvim_buf_line_count(buf)
@@ -149,28 +165,31 @@ builtins.buffergrep = function()
 
   local pad = #tostring(lst[#lst])
 
-  return artio.generic(lst, {
-    prompt = "buffergrep",
-    on_close = function(row, _)
-      vim.schedule(function()
-        vim.api.nvim_win_set_cursor(win, { row, 0 })
-      end)
-    end,
-    format_item = function(row)
-      return vim.api.nvim_buf_get_lines(buf, row - 1, row, true)[1]
-    end,
-    preview_item = function(row)
-      return buf,
-        function(w)
-          vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
-          vim.api.nvim_win_set_cursor(w, { row, 0 })
-        end
-    end,
-    get_icon = function(row)
-      local v = tostring(row.v)
-      return ("%s%s"):format((" "):rep(pad - #v), v)
-    end,
-  })
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "buffergrep",
+      on_close = function(row, _)
+        vim.schedule(function()
+          vim.api.nvim_win_set_cursor(win, { row, 0 })
+        end)
+      end,
+      format_item = function(row)
+        return vim.api.nvim_buf_get_lines(buf, row - 1, row, true)[1]
+      end,
+      preview_item = function(row)
+        return buf,
+          function(w)
+            vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
+            vim.api.nvim_win_set_cursor(w, { row, 0 })
+          end
+      end,
+      get_icon = function(row)
+        local v = tostring(row.v)
+        return ("%s%s"):format((" "):rep(pad - #v), v)
+      end,
+    }, props)
+  )
 end
 
 local function find_helptags()
@@ -185,17 +204,21 @@ local function find_helptags()
   end, tags)
 end
 
-builtins.helptags = function()
+builtins.helptags = function(props)
+  props = props or {}
   local lst = find_helptags()
 
-  return artio.generic(lst, {
-    prompt = "helptags",
-    on_close = function(text, _)
-      vim.schedule(function()
-        vim.cmd.help(text)
-      end)
-    end,
-  })
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "helptags",
+      on_close = function(text, _)
+        vim.schedule(function()
+          vim.cmd.help(text)
+        end)
+      end,
+    }, props)
+  )
 end
 
 local function find_buffers()
@@ -207,7 +230,8 @@ local function find_buffers()
     :totable()
 end
 
-builtins.buffers = function()
+builtins.buffers = function(props)
+  props = props or {}
   local lst = find_buffers()
 
   return artio.select(lst, {
@@ -226,7 +250,7 @@ builtins.buffers = function()
     preview_item = function(item)
       return item
     end,
-  })
+  }, props)
 end
 
 ---@param currentfile string
@@ -246,11 +270,13 @@ end
 --- uses the regular files picker as a base
 --- - boosts items in the bufferlist
 --- - proportionally boosts items that match closely to the current file in proximity within the filesystem
-builtins.smart = function()
+builtins.smart = function(props)
+  props = props or {}
   local currentfile = vim.api.nvim_buf_get_name(0)
   currentfile = vim.fs.abspath(currentfile)
 
-  local lst = find_files()
+  props.findprg = props.findprg or findprg
+  local lst = make_cmd(props.findprg)()
 
   local pwd = vim.fn.getcwd()
   local recentlst = vim
@@ -261,7 +287,7 @@ builtins.smart = function()
     end)
     :totable()
 
-  return artio.pick({
+  return artio.pick(extend({
     prompt = "smart",
     items = vim.tbl_keys(vim.iter({ lst, recentlst }):fold({}, function(items, l)
       for i = 1, #l do
@@ -298,26 +324,31 @@ builtins.smart = function()
     preview_item = function(item)
       return vim.fn.bufadd(item)
     end,
-  })
+  }, props))
 end
 
-builtins.colorschemes = function()
+builtins.colorschemes = function(props)
+  props = props or {}
   local files = vim.api.nvim_get_runtime_file("colors/*.{vim,lua}", true)
   local lst = vim.tbl_map(function(f)
     return vim.fs.basename(f):gsub("%.[^.]+$", "")
   end, files)
 
-  return artio.generic(lst, {
-    prompt = "colorschemes",
-    on_close = function(text, _)
-      vim.schedule(function()
-        vim.cmd.colorscheme(text)
-      end)
-    end,
-  })
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "colorschemes",
+      on_close = function(text, _)
+        vim.schedule(function()
+          vim.cmd.colorscheme(text)
+        end)
+      end,
+    }, props)
+  )
 end
 
-builtins.highlights = function()
+builtins.highlights = function(props)
+  props = props or {}
   local hlout = vim.split(vim.api.nvim_exec2([[ highlight ]], { output = true }).output, "\n", { trimempty = true })
 
   local maxw = 0
@@ -335,22 +366,25 @@ builtins.highlights = function()
       return t
     end)
 
-  return artio.generic(vim.tbl_keys(hls), {
-    prompt = "highlights",
-    on_close = function(line, _)
-      vim.schedule(function()
-        vim.print(line)
-      end)
-    end,
-    format_item = function(hlname)
-      return hls[hlname]
-    end,
-    hl_item = function(hlname)
-      return {
-        { { 0, #hlname.v }, hlname.v },
-      }
-    end,
-  })
+  return artio.generic(
+    vim.tbl_keys(hls),
+    extend({
+      prompt = "highlights",
+      on_close = function(line, _)
+        vim.schedule(function()
+          vim.print(line)
+        end)
+      end,
+      format_item = function(hlname)
+        return hls[hlname]
+      end,
+      hl_item = function(hlname)
+        return {
+          { { 0, #hlname.v }, hlname.v },
+        }
+      end,
+    }, props)
+  )
 end
 
 return builtins
