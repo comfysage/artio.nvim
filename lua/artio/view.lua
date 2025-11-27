@@ -292,6 +292,8 @@ function View:close()
     vim.cmd.redraw()
 
     self.closed = true
+
+    self.picker:close()
   end)
 end
 
