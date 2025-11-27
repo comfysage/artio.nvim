@@ -132,7 +132,11 @@ builtins.grep = function(props)
       end)
     end,
     preview_item = function(item)
-      return vim.fn.bufadd(item[1])
+      return vim.fn.bufadd(item[1]),
+        function(w)
+          vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
+          vim.api.nvim_win_set_cursor(w, { item[2], 0 })
+        end
     end,
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
