@@ -136,28 +136,49 @@ local ext_winhl = "Search:,CurSearch:,IncSearch:"
 
 function View:setopts()
   local opts = {
-    eventignorewin = "all,-FileType,-InsertCharPre,-TextChangedI,-CursorMovedI",
-    winhighlight = "Normal:ArtioNormal," .. ext_winhl,
-    laststatus = self.picker.win.hidestatusline and 0 or nil,
-    filetype = "artio-picker",
-    buftype = "prompt",
-
-    autocomplete = false,
-    signcolumn = "no",
-    wrap = false,
+    win = {
+      eventignorewin = "all,-FileType,-InsertCharPre,-TextChangedI,-CursorMovedI",
+      winhighlight = "Normal:ArtioNormal," .. ext_winhl,
+      signcolumn = "no",
+      wrap = false,
+    },
+    buf = {
+      filetype = "artio-picker",
+      buftype = "prompt",
+      autocomplete = false,
+    },
+    g = {
+      laststatus = self.picker.win.hidestatusline and 0 or nil,
+    },
   }
 
+  ---@type table<'win'|'buf'|'g',table<string,any>>
   self.opts = {}
 
-  for name, value in pairs(opts) do
-    self.opts[name] = vim.api.nvim_get_option_value(name, { scope = "local" })
-    vim.api.nvim_set_option_value(name, value, { scope = "local" })
+  for level, o in pairs(opts) do
+    self.opts[level] = self.opts[level] or {}
+    local props = {
+      scope = level == "g" and "global" or "local",
+      buf = level == "buf" and ext.bufs.cmd or nil,
+      win = level == "win" and ext.wins.cmd or nil,
+    }
+
+    for name, value in pairs(o) do
+      self.opts[level][name] = vim.api.nvim_get_option_value(name, props)
+      vim.api.nvim_set_option_value(name, value, props)
+    end
   end
 end
 
 function View:revertopts()
-  for name, value in pairs(self.opts) do
-    vim.api.nvim_set_option_value(name, value, { scope = "local" })
+  for level, o in pairs(self.opts) do
+    for name, value in pairs(o) do
+      vim.api.nvim_set_option_value(name, value, {
+        scope = level == "g" and "global" or "local",
+        buf = level == "buf" and ext.bufs.cmd or nil,
+        win = level == "win" and ext.wins.cmd or nil,
+      })
+    end
   end
 end
 
