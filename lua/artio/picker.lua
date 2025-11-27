@@ -16,6 +16,7 @@ local View = require("artio.view")
 ---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
+---@field on_quit? fun()
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
@@ -88,6 +89,9 @@ function Picker:open()
     self:close()
 
     if result == action_enum.cancel or result ~= action_enum.accept then
+      if self.on_quit then
+        self.on_quit()
+      end
       return
     end
 
