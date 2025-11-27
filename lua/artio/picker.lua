@@ -38,12 +38,10 @@ local action_enum = {
 local default_actions = {
   down = function(self, _)
     self.idx = self.idx + 1
-    self.view:showmatches()
     self.view:hlselect()
   end,
   up = function(self, _)
     self.idx = self.idx - 1
-    self.view:showmatches()
     self.view:hlselect()
   end,
   accept = function(_, co)

@@ -472,15 +472,15 @@ function View:hlselect()
   end
 
   do
-    local ok, result = self:mark(row, 0, {
+    local extid = self:mark(row, 0, {
       virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
       hl_mode = "combine",
       virt_text_pos = "overlay",
       line_hl_group = "ArtioSel",
       invalidate = true,
     })
-    if ok then
-      self.select_ext = result
+    if extid ~= -1 then
+      self.select_ext = extid
     end
   end
 end
