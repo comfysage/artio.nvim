@@ -57,6 +57,76 @@ builtins.files = function()
   })
 end
 
+local function grep(input)
+  input = input or ""
+  local grepcmd, n = vim.o.grepprg:gsub("%$%*", input)
+  if n == 0 then
+    grepcmd = grepcmd .. " " .. input
+  end
+
+  local fn = function(o)
+    local src = o.stderr
+    if o.code == 0 then
+      src = o.stdout
+    end
+    src = src
+    local lines = vim.split(src, "\n", { trimempty = true })
+    return lines
+  end
+  return fn(vim
+    .system({ vim.o.shell, "-c", grepcmd }, {
+      text = true,
+    })
+    :wait())
+end
+
+builtins.grep = function()
+  local ext = require("vim._extui.shared")
+
+  return artio.pick({
+    items = {},
+    prompt = "grep",
+    get_items = function(input)
+      if input == "" then
+        return {}
+      end
+
+      local lines = grep(input)
+
+      vim.fn.setloclist(ext.wins.cmd, {}, " ", {
+        title = "grep[" .. input .. "]",
+        lines = lines,
+        efm = vim.o.grepformat,
+        nr = "$",
+      })
+
+      return vim
+        .iter(ipairs(vim.fn.getloclist(ext.wins.cmd)))
+        :map(function(i, locitem)
+          return {
+            id = i,
+            v = { vim.fn.bufname(locitem.bufnr), locitem.lnum, locitem.col },
+            text = locitem.text,
+          }
+        end)
+        :totable()
+    end,
+    fn = artio.sorter,
+    on_close = function(item, _)
+      vim.schedule(function()
+        vim.cmd.edit(item[1])
+        vim.api.nvim_win_set_cursor(0, { item[2], item[3] })
+      end)
+    end,
+    preview_item = function(item)
+      return vim.fn.bufadd(item[1])
+    end,
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", item.v[1])
+    end or nil,
+  })
+end
+
 local function find_oldfiles()
   return vim
     .iter(vim.v.oldfiles)
@@ -85,7 +155,7 @@ builtins.oldfiles = function()
   })
 end
 
-builtins.livegrep = function()
+builtins.buffergrep = function()
   local win = vim.api.nvim_get_current_win()
   local buf = vim.api.nvim_win_get_buf(win)
   local n = vim.api.nvim_buf_line_count(buf)
@@ -97,7 +167,7 @@ builtins.livegrep = function()
   local pad = #tostring(lst[#lst])
 
   return artio.generic(lst, {
-    prompt = "livegrep",
+    prompt = "buffergrep",
     on_close = function(row, _)
       vim.schedule(function()
         vim.api.nvim_win_set_cursor(win, { row, 0 })
