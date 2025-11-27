@@ -68,12 +68,31 @@ builtins.files = function(props)
       preview_item = function(item)
         return vim.fn.bufadd(item)
       end,
+      actions = {
+        setqflist = function(self, co)
+          vim.fn.setqflist(vim
+            .iter(ipairs(self.matches))
+            :map(function(_, match)
+              local item = self.items[match[1]]
+              return { filename = item.v }
+            end)
+            :totable())
+          vim.schedule(function()
+            vim.cmd.copen()
+          end)
+          coroutine.resume(co, 1)
+        end,
+      },
+      mappings = {
+        ["<c-q>"] = "setqflist",
+      },
     }, props)
   )
 end
 
 builtins.grep = function(props)
   props = props or {}
+
   local ext = require("vim._extui.shared")
   local grepcmd = make_cmd(vim.o.grepprg)
 
