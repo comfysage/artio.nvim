@@ -40,10 +40,12 @@ local action_enum = {
 local default_actions = {
   down = function(self, _)
     self.idx = self.idx + 1
+    self.view:showmatches() -- adjust for scrolling
     self.view:hlselect()
   end,
   up = function(self, _)
     self.idx = self.idx - 1
+    self.view:showmatches() -- adjust for scrolling
     self.view:hlselect()
   end,
   accept = function(_, co)
