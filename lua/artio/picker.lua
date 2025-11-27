@@ -30,6 +30,7 @@ local View = require("artio.view")
 ---@field actions? artio.Actions
 local Picker = {}
 Picker.__index = Picker
+Picker.active_picker = nil
 
 local action_enum = {
   accept = 0,
@@ -87,6 +88,11 @@ function Picker:new(props)
 end
 
 function Picker:open()
+  if Picker.active_picker then
+    Picker.active_picker:close()
+  end
+  Picker.active_picker = self
+
   self.view = View:new(self)
 
   coroutine.wrap(function()
