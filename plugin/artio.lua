@@ -34,6 +34,10 @@ vim.api.nvim_create_autocmd({ "UIEnter", "ColorScheme" }, {
 
 vim.api.nvim_create_user_command("Artio", function(opts)
   local builtins = require("artio.builtins")
+  if #opts.fargs == 0 then
+    builtins.builtins()
+    return
+  end
   local builtin = builtins[opts.fargs[1]]
   if not builtin then
     vim.notify("unknown builtin: " .. opts.fargs[1], vim.log.levels.ERROR)
@@ -41,7 +45,7 @@ vim.api.nvim_create_user_command("Artio", function(opts)
   end
   builtin()
 end, {
-  nargs = 1,
+  nargs = "?",
   complete = function(_, _, _)
     return vim.tbl_keys(require("artio.builtins"))
   end,
