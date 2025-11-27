@@ -9,37 +9,42 @@ end
 local artio = lzrq("artio")
 local config = lzrq("artio.config")
 
+local function cmd_callback(o)
+  local src = o.stderr
+  if o.code == 0 then
+    src = o.stdout
+  end
+  src = src
+  local lines = vim.split(src, "\n", { trimempty = true })
+  return lines
+end
+
+---@param prg? string
+---@return fun(arg?: string): string[]
+local function make_cmd(prg)
+  return function(arg)
+    if not prg then
+      return {}
+    end
+    arg = string.format("'%s'", arg or "")
+    local cmd, n = prg:gsub("%$%*", arg)
+    if n == 0 then
+      cmd = ("%s %s"):format(prg, arg)
+    end
+    return cmd_callback(vim
+      .system({ vim.o.shell, "-c", cmd }, {
+        text = true,
+      })
+      :wait())
+  end
+end
+
 local builtins = {}
 
 local findprg = "fd -H -p -t f --color=never"
 
-local function find_files(match)
-  if not findprg then
-    return {}
-  end
-  local farg = string.format("'%s'", match or "")
-  local findcmd, n = findprg:gsub("%$%*", farg)
-  if n == 0 then
-    findcmd = findcmd .. " " .. farg
-  end
-  local fn = function(o)
-    local src = o.stderr
-    if o.code == 0 then
-      src = o.stdout
-    end
-    src = src
-    local lines = vim.split(src, "\n", { trimempty = true })
-    return lines
-  end
-  return fn(vim
-    .system({ vim.o.shell, "-c", findcmd }, {
-      text = true,
-    })
-    :wait())
-end
-
 builtins.files = function()
-  local lst = find_files()
+  local lst = make_cmd(findprg)()
 
   return artio.generic(lst, {
     prompt = "files",
@@ -57,31 +62,9 @@ builtins.files = function()
   })
 end
 
-local function grep(input)
-  input = input or ""
-  local grepcmd, n = vim.o.grepprg:gsub("%$%*", input)
-  if n == 0 then
-    grepcmd = grepcmd .. " " .. input
-  end
-
-  local fn = function(o)
-    local src = o.stderr
-    if o.code == 0 then
-      src = o.stdout
-    end
-    src = src
-    local lines = vim.split(src, "\n", { trimempty = true })
-    return lines
-  end
-  return fn(vim
-    .system({ vim.o.shell, "-c", grepcmd }, {
-      text = true,
-    })
-    :wait())
-end
-
 builtins.grep = function()
   local ext = require("vim._extui.shared")
+  local grepcmd = make_cmd(vim.o.grepprg)
 
   return artio.pick({
     items = {},
@@ -91,7 +74,7 @@ builtins.grep = function()
         return {}
       end
 
-      local lines = grep(input)
+      local lines = grepcmd(input)
 
       vim.fn.setloclist(ext.wins.cmd, {}, " ", {
         title = "grep[" .. input .. "]",
