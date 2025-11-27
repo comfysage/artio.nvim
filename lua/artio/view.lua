@@ -133,6 +133,7 @@ function View:setopts()
     winhighlight = "Normal:ArtioNormal," .. ext_winhl,
     laststatus = self.picker.win.hidestatusline and 0 or nil,
     filetype = "artio-picker",
+    autocomplete = false,
   }
 
   self.opts = {}
