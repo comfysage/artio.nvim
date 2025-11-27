@@ -435,7 +435,7 @@ function View:showmatches()
         local hl = line_hls[j]
         self:mark(
           cmdline.srow + i - 1,
-          indent + hl[1][1],
+          indent + icon_indent + hl[1][1],
           vim.tbl_extend("force", ext_match_opts, {
             end_col = indent + hl[1][2],
             hl_group = hl[2],
