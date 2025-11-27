@@ -134,6 +134,9 @@ artio.select = function(items, opts, on_choice, start_opts)
         on_close = function(_, idx)
           return on_choice(items[idx], idx)
         end,
+        on_quit = function()
+          return on_choice(nil, nil)
+        end,
       },
       opts or {}, -- opts.prompt, opts.format_item
       start_opts or {}
