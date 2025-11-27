@@ -247,7 +247,6 @@ function View:close()
   if self.closed then
     return
   end
-  self.closed = true
   cmdline.cmdline_show = self.prev_show
   self:closepreview()
   vim.schedule(function()
@@ -261,6 +260,7 @@ function View:close()
     vim.cmd.redraw()
     cmdline.cmdline_block_hide()
     pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+    self.closed = true
   end)
 end
 
