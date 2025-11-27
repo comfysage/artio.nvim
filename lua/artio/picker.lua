@@ -32,24 +32,23 @@ local action_enum = {
 
 ---@type table<string, fun(self: artio.Picker, co: thread)>
 local default_actions = {
-  down = function(self, co)
+  down = function(self, _)
     self.idx = self.idx + 1
     self.view:showmatches()
     self.view:hlselect()
   end,
-  up = function(self, co)
+  up = function(self, _)
     self.idx = self.idx - 1
     self.view:showmatches()
     self.view:hlselect()
   end,
-  accept = function(self, co)
+  accept = function(_, co)
     coroutine.resume(co, action_enum.accept)
   end,
-  cancel = function(self, co)
+  cancel = function(_, co)
     coroutine.resume(co, action_enum.cancel)
-    self.view:togglepreview()
   end,
-  togglepreview = function(self, co)
+  togglepreview = function(self, _)
     self.view:togglepreview()
   end,
 }
@@ -109,14 +108,15 @@ function Picker:open()
       return
     end
 
-    local current = self.matches[self.idx][1]
+    local current = self.matches[self.idx] and self.matches[self.idx][1]
     if not current then
       return
     end
 
     local item = self.items[current]
-
-    self.on_close(item.v, item.id)
+    if item then
+      self.on_close(item.v, item.id)
+    end
   end)()
 end
 

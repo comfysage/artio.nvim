@@ -43,20 +43,14 @@ function Actions:on_key(_, typed)
   end
 
   typed = string.lower(vim.fn.keytrans(typed))
-  if typed == "<down>" then
-    self.actions.down(self.picker, self.co)
-    return ""
-  elseif typed == "<up>" then
-    self.actions.up(self.picker, self.co)
-    return ""
-  elseif typed == "<cr>" then
-    self.actions.accept(self.picker, self.co)
-    return ""
-  elseif typed == "<esc>" then
-    self.actions.cancel(self.picker, self.co)
-    return ""
-  elseif typed == "<c-l>" then
-    self.actions.togglepreview(self.picker, self.co)
+
+  local _, actionname = vim.iter(pairs(self.picker.mappings)):find(function(key, _)
+    return key == typed
+  end)
+
+  local action = self.actions[actionname]
+  if action and vim.is_callable(action) then
+    action(self.picker, self.co)
     return ""
   end
 end
