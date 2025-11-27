@@ -84,26 +84,34 @@ function Picker:open()
     assert(not ismain, "must be called from a coroutine")
     self.co = co
 
+    vim.api.nvim_exec_autocmds("User", { pattern = "ArtioEnter" })
+
     local result = coroutine.yield()
 
     self:close()
 
-    if result == action_enum.cancel or result ~= action_enum.accept then
-      if self.on_quit then
-        self.on_quit()
+    while true do
+      if result == action_enum.cancel or result ~= action_enum.accept then
+        if self.on_quit then
+          self.on_quit()
+        end
+        break
       end
-      return
+
+      local current = self.matches[self.idx] and self.matches[self.idx][1]
+      if not current then
+        break
+      end
+
+      local item = self.items[current]
+      if item then
+        self.on_close(item.v, item.id)
+      end
+
+      break
     end
 
-    local current = self.matches[self.idx] and self.matches[self.idx][1]
-    if not current then
-      return
-    end
-
-    local item = self.items[current]
-    if item then
-      self.on_close(item.v, item.id)
-    end
+    vim.api.nvim_exec_autocmds("User", { pattern = "ArtioLeave" })
   end)()
 end
 
