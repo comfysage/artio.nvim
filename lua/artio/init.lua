@@ -117,7 +117,7 @@ end
 ---@param items T[] Arbitrary items
 ---@param opts vim.ui.select.Opts Additional options
 ---@param on_choice fun(item: T|nil, idx: integer|nil)
----@param start_opts? artio.Picker.proto
+---@param start_opts? artio.Picker.config
 artio.select = function(items, opts, on_choice, start_opts)
   return artio.generic(
     items,
@@ -135,7 +135,7 @@ end
 
 ---@generic T
 ---@param items T[]
----@param props artio.Picker.proto
+---@param props artio.Picker.config
 artio.generic = function(items, props)
   return artio.pick(vim.tbl_deep_extend("force", {
     fn = artio.sorter,
@@ -143,7 +143,7 @@ artio.generic = function(items, props)
   }, props))
 end
 
----@param ... artio.Picker.proto
+---@param ... artio.Picker.config
 artio.pick = function(...)
   local Picker = require("artio.picker")
   if artio.active_picker then
