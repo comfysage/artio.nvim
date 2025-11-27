@@ -258,6 +258,7 @@ function View:close()
     cmdline.erow = 0
     win_config(ext.wins.cmd, true, ext.cmdheight)
     self:restoreview()
+    vim.cmd.redraw()
     cmdline.cmdline_block_hide()
     pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
   end)
