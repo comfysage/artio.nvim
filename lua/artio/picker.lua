@@ -1,3 +1,4 @@
+local Actions = require("artio.actions")
 local View = require("artio.view")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
@@ -5,7 +6,7 @@ local View = require("artio.view")
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@alias artio.Picker.hl [[integer, integer], string]
 
----@class artio.Picker.config
+---@class artio.Picker.config : artio.config
 ---@field items artio.Picker.item[]
 ---@field fn artio.Picker.sorter
 ---@field on_close fun(text: string, idx: integer)
@@ -13,8 +14,7 @@ local View = require("artio.view")
 ---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
----@field opts? artio.config.opts
----@field win? artio.config.win
+---@field actions? artio.Actions
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
@@ -24,6 +24,35 @@ local View = require("artio.view")
 ---@field matches artio.Picker.match[]
 local Picker = {}
 Picker.__index = Picker
+
+local action_enum = {
+  accept = 0,
+  cancel = 1,
+}
+
+---@type table<string, fun(self: artio.Picker, co: thread)>
+local default_actions = {
+  down = function(self, co)
+    self.idx = self.idx + 1
+    self.view:showmatches()
+    self.view:hlselect()
+  end,
+  up = function(self, co)
+    self.idx = self.idx - 1
+    self.view:showmatches()
+    self.view:hlselect()
+  end,
+  accept = function(self, co)
+    coroutine.resume(co, action_enum.accept)
+  end,
+  cancel = function(self, co)
+    coroutine.resume(co, action_enum.cancel)
+    self.view:togglepreview()
+  end,
+  togglepreview = function(self, co)
+    self.view:togglepreview()
+  end,
+}
 
 ---@param props artio.Picker.config
 function Picker:new(props)
@@ -59,57 +88,24 @@ function Picker:new(props)
     end)
     :totable()
 
+  t.actions = t.actions or Actions:new({
+    actions = default_actions,
+  })
+
   return setmetatable(t, Picker)
 end
 
 function Picker:open()
-  local accepted
-  local cancelled
-
   self.view = View:new(self)
 
   coroutine.wrap(function()
     self.view:open()
 
-    local co, ismain = coroutine.running()
-    assert(not ismain, "must be called from a coroutine")
-
-    self.key_ns = vim.on_key(function(_, typed)
-      if self.view.closed then
-        coroutine.resume(co)
-        return
-      end
-
-      typed = string.lower(vim.fn.keytrans(typed))
-      if typed == "<down>" then
-        self.idx = self.idx + 1
-        self.view:showmatches()
-        self.view:hlselect()
-        return ""
-      elseif typed == "<up>" then
-        self.idx = self.idx - 1
-        self.view:showmatches()
-        self.view:hlselect()
-        return ""
-      elseif typed == "<cr>" then
-        accepted = true
-        coroutine.resume(co)
-        return ""
-      elseif typed == "<esc>" then
-        cancelled = true
-        coroutine.resume(co)
-        return ""
-      elseif typed == "<c-l>" then
-        self.view:togglepreview()
-        return ""
-      end
-    end)
-
-    coroutine.yield()
+    local result = self.actions:init(self)
 
     self:close()
 
-    if cancelled or not accepted then
+    if result == action_enum.cancel or result ~= action_enum.accept then
       return
     end
 
@@ -129,7 +125,6 @@ function Picker:close()
     return
   end
 
-  vim.on_key(nil, self.key_ns)
   if self.view then
     self.view:close()
   end

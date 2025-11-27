@@ -3,6 +3,7 @@
 ---@class artio.config
 ---@field opts artio.config.opts
 ---@field win artio.config.win
+---@field mappings table<string, 'up'|'down'|'accept'|'cancel'|'togglepreview'|string>
 
 ---@class artio.config.opts
 ---@field preselect boolean
@@ -44,6 +45,13 @@ M.default = {
         row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == "none" and 0 or 2),
       }
     end,
+  },
+  mappings = {
+    ["<down>"] = "down",
+    ["<up>"] = "up",
+    ["<cr>"] = "accept",
+    ["<esc>"] = "cancel",
+    ["<c-l>"] = "togglepreview",
   },
 }
 
