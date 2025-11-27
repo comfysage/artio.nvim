@@ -27,6 +27,7 @@ end
 ---@class artio.View
 ---@field picker artio.Picker
 ---@field closed boolean
+---@field opts table<'win'|'buf'|'g',table<string,any>>
 ---@field win artio.View.win
 ---@field preview_win integer
 local View = {}
@@ -37,6 +38,7 @@ function View:new(picker)
   return setmetatable({
     picker = picker,
     closed = false,
+    opts = {},
     win = {
       height = 0,
     },
@@ -134,7 +136,8 @@ end
 
 local ext_winhl = "Search:,CurSearch:,IncSearch:"
 
-function View:setopts()
+---@param restore? boolean
+function View:setopts(restore)
   local opts = {
     win = {
       eventignorewin = "all,-FileType,-InsertCharPre,-TextChangedI,-CursorMovedI",
@@ -152,9 +155,6 @@ function View:setopts()
     },
   }
 
-  ---@type table<'win'|'buf'|'g',table<string,any>>
-  self.opts = {}
-
   for level, o in pairs(opts) do
     self.opts[level] = self.opts[level] or {}
     local props = {
@@ -164,20 +164,12 @@ function View:setopts()
     }
 
     for name, value in pairs(o) do
-      self.opts[level][name] = vim.api.nvim_get_option_value(name, props)
-      vim.api.nvim_set_option_value(name, value, props)
-    end
-  end
-end
-
-function View:revertopts()
-  for level, o in pairs(self.opts) do
-    for name, value in pairs(o) do
-      vim.api.nvim_set_option_value(name, value, {
-        scope = level == "g" and "global" or "local",
-        buf = level == "buf" and ext.bufs.cmd or nil,
-        win = level == "win" and ext.wins.cmd or nil,
-      })
+      if restore then
+        vim.api.nvim_set_option_value(name, self.opts[level][name], props)
+      else
+        self.opts[level][name] = vim.api.nvim_get_option_value(name, props)
+        vim.api.nvim_set_option_value(name, value, props)
+      end
     end
   end
 end
@@ -203,8 +195,6 @@ function View:open()
   ext.check_targets()
 
   self.prev_show = cmdline.cmdline_show
-
-  self.augroup = vim.api.nvim_create_augroup("artio:view", {})
 
   vim.schedule(function()
     vim.api.nvim_create_autocmd({ "CmdlineLeave", "ModeChanged" }, {
@@ -289,7 +279,7 @@ function View:close()
     vim.cmd.stopinsert()
 
     -- prepare state
-    self:revertopts()
+    self:setopts(true)
 
     -- reset state
     self:clear()
