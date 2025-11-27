@@ -45,6 +45,23 @@ end
 
 local builtins = {}
 
+local function make_setqflist(fn)
+  return function(self, co)
+    vim.fn.setqflist(vim
+      .iter(ipairs(self.matches))
+      :map(function(_, match)
+        local item = self.items[match[1]]
+        local qfitem = fn(item)
+        return qfitem
+      end)
+      :totable())
+    vim.schedule(function()
+      vim.cmd.copen()
+    end)
+    coroutine.resume(co, 1)
+  end
+end
+
 local findprg = "fd -H -p -t f --color=never"
 
 builtins.files = function(props)
@@ -69,19 +86,9 @@ builtins.files = function(props)
         return vim.fn.bufadd(item)
       end,
       actions = {
-        setqflist = function(self, co)
-          vim.fn.setqflist(vim
-            .iter(ipairs(self.matches))
-            :map(function(_, match)
-              local item = self.items[match[1]]
-              return { filename = item.v }
-            end)
-            :totable())
-          vim.schedule(function()
-            vim.cmd.copen()
-          end)
-          coroutine.resume(co, 1)
-        end,
+        setqflist = make_setqflist(function(item)
+          return { filename = item.v }
+        end),
       },
       mappings = {
         ["<c-q>"] = "setqflist",
@@ -141,6 +148,14 @@ builtins.grep = function(props)
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
+    actions = {
+      setqflist = make_setqflist(function(item)
+        return { filename = item.v[1], lnum = item.v[2], col = item.v[3] }
+      end),
+    },
+    mappings = {
+      ["<c-q>"] = "setqflist",
+    },
   }, props))
 end
 
@@ -172,6 +187,14 @@ builtins.oldfiles = function(props)
       preview_item = function(item)
         return vim.fn.bufadd(item)
       end,
+      actions = {
+        setqflist = make_setqflist(function(item)
+          return { filename = item.v }
+        end),
+      },
+      mappings = {
+        ["<c-q>"] = "setqflist",
+      },
     }, props)
   )
 end
@@ -347,6 +370,14 @@ builtins.smart = function(props)
     preview_item = function(item)
       return vim.fn.bufadd(item)
     end,
+    actions = {
+      setqflist = make_setqflist(function(item)
+        return { filename = item.v }
+      end),
+    },
+    mappings = {
+      ["<c-q>"] = "setqflist",
+    },
   }, props))
 end
 
