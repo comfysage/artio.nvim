@@ -16,6 +16,35 @@ end
 
 local builtins = {}
 
+builtins.builtins = function(props)
+  props = props or {}
+
+  return artio.generic(
+    vim.tbl_keys(builtins),
+    extend({
+      prompt = "builtins",
+      on_close = function(fname, _)
+        if not builtins[fname] then
+          return
+        end
+
+        local Picker = require("artio.picker")
+        local current = Picker.active_picker
+        if not current or not current.closed then
+          return
+        end
+
+        vim.schedule(function()
+          vim.defer_fn(builtins[fname], 10)
+          vim.wait(1000, function()
+            return coroutine.status(current.co) == "dead"
+          end)
+        end)
+      end,
+    }, props)
+  )
+end
+
 local findprg = vim.fn.executable("fd") == 1 and "fd -H -p -a -t f --color=never --"
   or "find . -type f -iregex '.*$*.*'"
 
