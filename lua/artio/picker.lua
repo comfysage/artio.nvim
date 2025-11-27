@@ -6,10 +6,11 @@ local View = require("artio.view")
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@alias artio.Picker.hl [[integer, integer], string]
 
----@class artio.Picker.config : artio.config
----@field items artio.Picker.item[]
+---@class artio.Picker.config
+---@field items artio.Picker.item[]|string[]
 ---@field fn artio.Picker.sorter
 ---@field on_close fun(text: string, idx: integer)
+---@field get_items? fun(input: string): artio.Picker.item[]
 ---@field format_item? fun(item: any): string
 ---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
@@ -18,6 +19,9 @@ local View = require("artio.view")
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
+---@field opts? artio.config.opts
+---@field win? artio.config.win
+---@field mappings? table<string, 'up'|'down'|'accept'|'cancel'|'togglepreview'|string>
 
 ---@class artio.Picker : artio.Picker.config
 ---@field idx integer 1-indexed
@@ -71,21 +75,7 @@ function Picker:new(props)
     t.prompttext = t.opts.prompt_title and ("%s %s"):format(t.prompt, t.opts.promptprefix) or t.opts.promptprefix
   end
 
-  t.items = vim
-    .iter(ipairs(t.items))
-    :map(function(i, v)
-      local text
-      if t.format_item and vim.is_callable(t.format_item) then
-        text = t.format_item(v)
-      end
-
-      return {
-        id = i,
-        v = v,
-        text = text or v,
-      }
-    end)
-    :totable()
+  Picker.getitems(t, "")
 
   t.actions = t.actions or Actions:new({
     actions = default_actions,
@@ -137,7 +127,29 @@ function Picker:fix()
   self.idx = math.min(self.idx, #self.matches)
 end
 
+function Picker:getitems(input)
+  self.items = self.get_items and self.get_items(input) or self.items
+  if #self.items > 0 and type(self.items[1]) == "string" then
+    self.items = vim
+      .iter(ipairs(self.items))
+      :map(function(i, v)
+        local text
+        if self.format_item and vim.is_callable(self.format_item) then
+          text = self.format_item(v)
+        end
+
+        return {
+          id = i,
+          v = v,
+          text = text or v,
+        }
+      end)
+      :totable()
+  end
+end
+
 function Picker:getmatches(input)
+  self:getitems(input)
   self.matches = self.fn(self.items, input)
   table.sort(self.matches, function(a, b)
     return a[3] > b[3]
