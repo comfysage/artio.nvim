@@ -24,31 +24,6 @@ local function win_config(win, hide, height)
   end
 end
 
-local cmdbuff = "" ---@type string Stored cmdline used to calculate translation offset.
-local promptlen = 0 -- Current length of the last line in the prompt.
-local promptwidth = 0 -- Current width of the prompt in the cmdline buffer.
-local promptidx = 0
---- Concatenate content chunks and set the text for the current row in the cmdline buffer.
----
----@param content CmdContent
----@param prompt string
-local function set_text(content, prompt)
-  local lines = {} ---@type string[]
-  for line in (prompt .. "\n"):gmatch("(.-)\n") do
-    lines[#lines + 1] = vim.fn.strtrans(line)
-  end
-
-  promptlen = #lines[#lines]
-  promptwidth = vim.fn.strdisplaywidth(lines[#lines])
-
-  cmdbuff = ""
-  for _, chunk in ipairs(content) do
-    cmdbuff = cmdbuff .. chunk[2]
-  end
-  lines[#lines] = ("%s%s"):format(lines[#lines], vim.fn.strtrans(cmdbuff))
-  vim.api.nvim_buf_set_lines(ext.bufs.cmd, promptidx, promptidx + 1, false, lines)
-end
-
 ---@class artio.View
 ---@field picker artio.Picker
 ---@field closed boolean
@@ -72,6 +47,31 @@ end
 ---@field height integer
 
 local prompthl_id = -1
+
+local cmdbuff = "" ---@type string Stored cmdline used to calculate translation offset.
+local promptlen = 0 -- Current length of the last line in the prompt.
+local promptwidth = 0 -- Current width of the prompt in the cmdline buffer.
+local promptidx = 0
+--- Concatenate content chunks and set the text for the current row in the cmdline buffer.
+---
+---@param content CmdContent
+---@param prompt string
+function View:setprompttext(content, prompt)
+  local lines = {} ---@type string[]
+  for line in (prompt .. "\n"):gmatch("(.-)\n") do
+    lines[#lines + 1] = vim.fn.strtrans(line)
+  end
+
+  promptlen = #lines[#lines]
+  promptwidth = vim.fn.strdisplaywidth(lines[#lines])
+
+  cmdbuff = ""
+  for _, chunk in ipairs(content) do
+    cmdbuff = cmdbuff .. chunk[2]
+  end
+  lines[#lines] = ("%s%s"):format(lines[#lines], vim.fn.strtrans(cmdbuff))
+  self:setlines(promptidx, promptidx + 1, lines)
+end
 
 --- Set the cmdline buffer text and cursor position.
 ---
@@ -103,7 +103,7 @@ function View:show(content, pos, firstc, prompt, indent, level, hl_id)
   self:showmatches()
 
   self:promptpos()
-  set_text(content, ("%s%s%s"):format(firstc, prompt, (" "):rep(indent)))
+  self:setprompttext(content, ("%s%s%s"):format(firstc, prompt, (" "):rep(indent)))
   self:updatecursor(pos)
 
   local height = math.max(1, vim.api.nvim_win_text_height(ext.wins.cmd, {}).all)
@@ -192,6 +192,7 @@ function View:open()
 
     vim.api.nvim_create_autocmd("TextChangedI", {
       group = self.augroup,
+      buffer = ext.bufs.cmd,
       callback = function()
         self:update()
       end,
@@ -199,6 +200,7 @@ function View:open()
 
     vim.api.nvim_create_autocmd("CursorMovedI", {
       group = self.augroup,
+      buffer = ext.bufs.cmd,
       callback = function()
         self:updatecursor()
       end,
@@ -305,11 +307,17 @@ end
 function View:clear()
   cmdline.srow = self.picker.opts.bottom and 0 or 1
   cmdline.erow = 0
-  vim.api.nvim_buf_set_lines(ext.bufs.cmd, 0, -1, false, {})
+  self:setlines(0, -1, {})
 end
 
 function View:promptpos()
   promptidx = self.picker.opts.bottom and cmdline.erow or 0
+end
+
+function View:setlines(posstart, posend, lines)
+  vim._with({ noautocmd = true }, function()
+    vim.api.nvim_buf_set_lines(ext.bufs.cmd, posstart, posend, false, lines)
+  end)
 end
 
 local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
@@ -325,7 +333,10 @@ local ext_match_opts = {
 ---@param opts vim.api.keyset.set_extmark
 ---@return integer
 function View:mark(line, col, opts)
-  local ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
+  local ok, result
+  vim._with({ noautocmd = true }, function()
+    ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
+  end)
   if not ok then
     vim.notify(("Failed to add extmark %d:%d"):format(line, col), vim.log.levels.ERROR)
     return -1
@@ -412,7 +423,7 @@ function View:showmatches()
     end
   end
   cmdline.erow = cmdline.srow + #lines
-  vim.api.nvim_buf_set_lines(ext.bufs.cmd, cmdline.srow, cmdline.erow, false, lines)
+  self:setlines(cmdline.srow, cmdline.erow, lines)
 
   for i = 1, #lines do
     local has_icon = icons[i] and icons[i][1] and true
@@ -455,7 +466,9 @@ end
 
 function View:hlselect()
   if self.select_ext then
-    vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.select_ext)
+    vim._with({ noautocmd = true }, function()
+      vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.select_ext)
+    end)
   end
 
   self:softupdatepreview()
