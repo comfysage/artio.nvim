@@ -50,7 +50,6 @@ local prompthl_id = -1
 
 local cmdbuff = "" ---@type string Stored cmdline used to calculate translation offset.
 local promptlen = 0 -- Current length of the last line in the prompt.
-local promptwidth = 0 -- Current width of the prompt in the cmdline buffer.
 local promptidx = 0
 --- Concatenate content chunks and set the text for the current row in the cmdline buffer.
 ---
@@ -62,15 +61,23 @@ function View:setprompttext(content, prompt)
     lines[#lines + 1] = vim.fn.strtrans(line)
   end
 
+  local promptstr = lines[#lines]
   promptlen = #lines[#lines]
-  promptwidth = vim.fn.strdisplaywidth(lines[#lines])
 
   cmdbuff = ""
   for _, chunk in ipairs(content) do
     cmdbuff = cmdbuff .. chunk[2]
   end
-  lines[#lines] = ("%s%s"):format(lines[#lines], vim.fn.strtrans(cmdbuff))
+  lines[#lines] = ("%s%s"):format(promptstr, vim.fn.strtrans(cmdbuff))
   self:setlines(promptidx, promptidx + 1, lines)
+  vim.fn.prompt_setprompt(ext.bufs.cmd, promptstr)
+  vim.schedule(function()
+    local ok, result = pcall(vim.api.nvim_buf_set_mark, ext.bufs.cmd, ":", promptidx + 1, 0, {})
+    if not ok then
+      vim.notify(("Failed to set mark %d:%d\n\t%s"):format(promptidx, promptlen, result), vim.log.levels.ERROR)
+      return
+    end
+  end)
 end
 
 --- Set the cmdline buffer text and cursor position.
@@ -129,11 +136,15 @@ local ext_winhl = "Search:ArtioNormal,CurSearch:ArtioNormal,IncSearch:ArtioNorma
 
 function View:setopts()
   local opts = {
-    eventignorewin = "all,-FileType,-TextChangedI,-CursorMovedI",
+    eventignorewin = "all,-FileType,-InsertCharPre,-TextChangedI,-CursorMovedI",
     winhighlight = "Normal:ArtioNormal," .. ext_winhl,
     laststatus = self.picker.win.hidestatusline and 0 or nil,
     filetype = "artio-picker",
+    buftype = "prompt",
+
     autocomplete = false,
+    signcolumn = "no",
+    wrap = false,
   }
 
   self.opts = {}
@@ -217,7 +228,7 @@ function View:open()
 
   cmdline.cmdline_show(
     { self.picker.defaulttext and { 0, self.picker.defaulttext } or nil },
-    nil,
+    -1,
     "",
     self.picker.prompttext,
     1,
@@ -231,13 +242,13 @@ function View:open()
 
   self:setopts()
 
-  vim._with({ noautocmd = true }, function()
-    vim.cmd.startinsert()
-  end)
-
   vim.schedule(function()
     self:clear()
     self:updatecursor()
+  end)
+
+  vim._with({ noautocmd = true }, function()
+    vim.cmd.startinsert()
   end)
 
   vim._with({ win = ext.wins.cmd, wo = { eventignorewin = "" } }, function()
@@ -270,7 +281,7 @@ function View:update()
   local text = vim.api.nvim_get_current_line()
   text = text:sub(promptlen + 1)
 
-  cmdline.cmdline_show({ { 0, text } }, nil, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
+  cmdline.cmdline_show({ { 0, text } }, -1, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
 end
 
 local curpos = { 0, 0 } -- Last drawn cursor position. absolute
@@ -278,7 +289,7 @@ local curpos = { 0, 0 } -- Last drawn cursor position. absolute
 function View:updatecursor(pos)
   self:promptpos()
 
-  if not pos then
+  if not pos or pos < 0 then
     local cursorpos = vim.api.nvim_win_get_cursor(ext.wins.cmd)
     pos = cursorpos[2] - promptlen
   end
