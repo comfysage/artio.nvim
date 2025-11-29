@@ -132,7 +132,7 @@ function View:restoreview()
   vim.fn.winrestview(self.save)
 end
 
-local ext_winhl = "Search:ArtioNormal,CurSearch:ArtioNormal,IncSearch:ArtioNormal"
+local ext_winhl = "Search:,CurSearch:,IncSearch:"
 
 function View:setopts()
   local opts = {
