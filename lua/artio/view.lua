@@ -459,7 +459,7 @@ function View:showmatches()
           cmdline.srow + i - 1,
           indent + icon_indent + hl[1][1],
           vim.tbl_extend("force", ext_match_opts, {
-            end_col = indent + hl[1][2],
+            end_col = indent + icon_indent + hl[1][2],
             hl_group = hl[2],
           })
         )
