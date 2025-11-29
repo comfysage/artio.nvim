@@ -263,18 +263,54 @@ function View:close()
   cmdline.cmdline_show = self.prev_show
   self:closepreview()
   vim.schedule(function()
+    pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+
     vim.cmd.stopinsert()
+
+    -- prepare state
     self:revertopts()
+
+    -- reset state
     self:clear()
     cmdline.srow = 0
     cmdline.erow = 0
-    win_config(ext.wins.cmd, true, ext.cmdheight)
+
+    -- restore ui
+    self:hide()
     self:restoreview()
     vim.cmd.redraw()
-    cmdline.cmdline_block_hide()
-    pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+
     self.closed = true
   end)
+end
+
+function View:hide()
+  vim.fn.clearmatches(ext.wins.cmd) -- Clear matchparen highlights.
+  vim.api.nvim_win_set_cursor(ext.wins.cmd, { 1, 0 })
+  vim.api.nvim_buf_set_lines(ext.bufs.cmd, 0, -1, false, {})
+
+  local clear = vim.schedule_wrap(function(was_prompt)
+    -- Avoid clearing prompt window when it is re-entered before the next event
+    -- loop iteration. E.g. when a non-choice confirm button is pressed.
+    if was_prompt and not cmdline.prompt then
+      pcall(function()
+        vim.api.nvim_buf_set_lines(ext.bufs.cmd, 0, -1, false, {})
+        vim.api.nvim_buf_set_lines(ext.bufs.dialog, 0, -1, false, {})
+        vim.api.nvim_win_set_config(ext.wins.dialog, { hide = true })
+        vim.on_key(nil, ext.msg.dialog_on_key)
+      end)
+    end
+    -- Messages emitted as a result of a typed command are treated specially:
+    -- remember if the cmdline was used this event loop iteration.
+    -- NOTE: Message event callbacks are themselves scheduled, so delay two iterations.
+    vim.schedule(function()
+      cmdline.level = -1
+    end)
+  end)
+  clear(cmdline.prompt)
+
+  cmdline.prompt, cmdline.level = false, 0
+  win_config(ext.wins.cmd, true, ext.cmdheight)
 end
 
 function View:update()
