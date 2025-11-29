@@ -104,7 +104,7 @@ builtins.grep = function(props)
     end or nil,
     actions = {
       setqflist = utils.make_setqflist(function(item)
-        return { filename = item.v[1], lnum = item.v[2], col = item.v[3] }
+        return { filename = item.v[1], lnum = item.v[2], col = item.v[3], text = item.text }
       end),
     },
     mappings = {
