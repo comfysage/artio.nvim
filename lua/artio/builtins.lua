@@ -8,59 +8,13 @@ end
 
 local artio = lzrq("artio")
 local config = lzrq("artio.config")
+local utils = lzrq("artio.utils")
 
 local function extend(t1, t2)
   return vim.tbl_deep_extend("force", t1, t2)
 end
 
-local function cmd_callback(o)
-  local src = o.stderr
-  if o.code == 0 then
-    src = o.stdout
-  end
-  src = src
-  local lines = vim.split(src, "\n", { trimempty = true })
-  return lines
-end
-
----@param prg? string
----@return fun(arg?: string): string[]
-local function make_cmd(prg)
-  return function(arg)
-    if not prg then
-      return {}
-    end
-    arg = string.format("'%s'", arg or "")
-    local cmd, n = prg:gsub("%$%*", arg)
-    if n == 0 then
-      cmd = ("%s %s"):format(prg, arg)
-    end
-    return cmd_callback(vim
-      .system({ vim.o.shell, "-c", cmd }, {
-        text = true,
-      })
-      :wait())
-  end
-end
-
 local builtins = {}
-
-local function make_setqflist(fn)
-  return function(self, co)
-    vim.fn.setqflist(vim
-      .iter(ipairs(self.matches))
-      :map(function(_, match)
-        local item = self.items[match[1]]
-        local qfitem = fn(item)
-        return qfitem
-      end)
-      :totable())
-    vim.schedule(function()
-      vim.cmd.copen()
-    end)
-    coroutine.resume(co, 1)
-  end
-end
 
 local findprg = "fd -H -p -t f --color=never"
 
@@ -68,7 +22,7 @@ builtins.files = function(props)
   props = props or {}
   props.findprg = props.findprg or findprg
 
-  local lst = make_cmd(props.findprg)()
+  local lst = utils.make_cmd(props.findprg)()
 
   return artio.generic(
     lst,
@@ -86,7 +40,7 @@ builtins.files = function(props)
         return vim.fn.bufadd(item)
       end,
       actions = {
-        setqflist = make_setqflist(function(item)
+        setqflist = utils.make_setqflist(function(item)
           return { filename = item.v }
         end),
       },
@@ -101,7 +55,7 @@ builtins.grep = function(props)
   props = props or {}
 
   local ext = require("vim._extui.shared")
-  local grepcmd = make_cmd(vim.o.grepprg)
+  local grepcmd = utils.make_cmd(vim.o.grepprg)
 
   return artio.pick(extend({
     items = {},
@@ -149,7 +103,7 @@ builtins.grep = function(props)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
     actions = {
-      setqflist = make_setqflist(function(item)
+      setqflist = utils.make_setqflist(function(item)
         return { filename = item.v[1], lnum = item.v[2], col = item.v[3] }
       end),
     },
@@ -188,7 +142,7 @@ builtins.oldfiles = function(props)
         return vim.fn.bufadd(item)
       end,
       actions = {
-        setqflist = make_setqflist(function(item)
+        setqflist = utils.make_setqflist(function(item)
           return { filename = item.v }
         end),
       },
@@ -322,7 +276,7 @@ builtins.smart = function(props)
   currentfile = vim.fs.abspath(currentfile)
 
   props.findprg = props.findprg or findprg
-  local lst = make_cmd(props.findprg)()
+  local lst = utils.make_cmd(props.findprg)()
 
   local pwd = vim.fn.getcwd()
   local recentlst = vim
@@ -371,7 +325,7 @@ builtins.smart = function(props)
       return vim.fn.bufadd(item)
     end,
     actions = {
-      setqflist = make_setqflist(function(item)
+      setqflist = utils.make_setqflist(function(item)
         return { filename = item.v }
       end),
     },
