@@ -27,6 +27,7 @@ local View = require("artio.view")
 ---@class artio.Picker : artio.Picker.config
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
+---@field marked table<integer, true|nil>
 ---@field actions? artio.Actions
 local Picker = {}
 Picker.__index = Picker
@@ -55,6 +56,16 @@ local default_actions = {
   cancel = function(_, co)
     coroutine.resume(co, action_enum.cancel)
   end,
+  mark = function(self, _)
+    local match = self.matches[self.idx]
+    if not match then
+      return
+    end
+    local idx = match[1]
+    self:mark(idx, not self.marked[idx])
+    self.view:showmatches() -- redraw marker
+    self.view:hlselect()
+  end,
   togglepreview = function(self, _)
     self.view:togglepreview()
   end,
@@ -72,6 +83,7 @@ function Picker:new(props)
     idx = 0,
     items = {},
     matches = {},
+    marked = {},
   }, require("artio.config").get(), props)
 
   if not t.prompttext then
@@ -165,6 +177,22 @@ function Picker:getmatches(input)
   table.sort(self.matches, function(a, b)
     return a[3] > b[3]
   end)
+end
+
+---@param idx integer
+---@param yes? boolean
+function Picker:mark(idx, yes)
+  self.marked[idx] = yes == nil and true or yes
+end
+
+---@return integer[]
+function Picker:getmarked()
+  return vim
+    .iter(pairs(self.marked))
+    :map(function(k, v)
+      return v and k or nil
+    end)
+    :totable()
 end
 
 return Picker

@@ -12,6 +12,7 @@
 ---@field promptprefix string
 ---@field prompt_title boolean
 ---@field pointer string
+---@field marker string
 ---@field use_icons boolean
 
 ---@class artio.config.win
@@ -32,6 +33,7 @@ M.default = {
     promptprefix = "",
     prompt_title = true,
     pointer = "",
+    marker = "│",
     use_icons = package.loaded["mini.icons"] and true or false,
   },
   win = {
@@ -51,7 +53,10 @@ M.default = {
     ["<up>"] = "up",
     ["<cr>"] = "accept",
     ["<esc>"] = "cancel",
+    ["<tab>"] = "mark",
     ["<c-l>"] = "togglepreview",
+    ["<c-q>"] = "setqflist",
+    ["<c-w>"] = "setqflistmark",
   },
 }
 

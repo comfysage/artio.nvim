@@ -441,6 +441,7 @@ function View:showmatches()
   local hls = {}
   local icons = {} ---@type ([string, string]|false)[]
   local custom_hls = {} ---@type (artio.Picker.hl[]|false)[]
+  local marks = {} ---@type boolean[]
   for i = 1 + offset, math.min(#self.picker.matches, maxlistheight + offset) do
     local match = self.picker.matches[i]
     local item = self.picker.items[match[1]]
@@ -459,6 +460,8 @@ function View:showmatches()
       item.hls = hl
     end
     custom_hls[#custom_hls + 1] = hl or false
+
+    marks[#marks + 1] = self.picker.marked[item.id] or false
 
     lines[#lines + 1] = ("%s%s%s"):format(prefix, icon, item.text)
     hls[#hls + 1] = match[2]
@@ -500,6 +503,15 @@ function View:showmatches()
           })
         )
       end
+    end
+
+    if marks[i] then
+      self:mark(cmdline.srow + i - 1, indent - 1, {
+        virt_text = { { self.picker.opts.marker, "ArtioMarker" } },
+        hl_mode = "combine",
+        virt_text_pos = "overlay",
+        invalidate = true,
+      })
     end
 
     if hls[i] then

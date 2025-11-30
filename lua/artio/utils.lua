@@ -30,6 +30,8 @@ function utils.make_cmd(prg)
   end
 end
 
+---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
+---@return artio.Picker.action
 function utils.make_setqflist(fn)
   return function(self, co)
     vim.fn.setqflist(vim
@@ -45,6 +47,34 @@ function utils.make_setqflist(fn)
     end)
     coroutine.resume(co, 1)
   end
+end
+
+---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
+---@return artio.Picker.action
+function utils.make_setqflistmark(fn)
+  return function(self, co)
+    vim.fn.setqflist(vim
+      .iter(ipairs(self:getmarked()))
+      :map(function(_, id)
+        local item = self.items[id]
+        local qfitem = fn(item)
+        return qfitem
+      end)
+      :totable())
+    vim.schedule(function()
+      vim.cmd.copen()
+    end)
+    coroutine.resume(co, 1)
+  end
+end
+
+---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
+---@return table<string, artio.Picker.action>
+function utils.make_setqflistactions(fn)
+  return {
+    setqflist = utils.make_setqflist(fn),
+    setqflistmark = utils.make_setqflistmark(fn),
+  }
 end
 
 return utils

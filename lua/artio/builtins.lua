@@ -10,8 +10,8 @@ local artio = lzrq("artio")
 local config = lzrq("artio.config")
 local utils = lzrq("artio.utils")
 
-local function extend(t1, t2)
-  return vim.tbl_deep_extend("force", t1, t2)
+local function extend(t1, ...)
+  return vim.tbl_deep_extend("force", t1, ...)
 end
 
 local builtins = {}
@@ -39,14 +39,13 @@ builtins.files = function(props)
       preview_item = function(item)
         return vim.fn.bufadd(item)
       end,
-      actions = {
-        setqflist = utils.make_setqflist(function(item)
+      actions = extend(
+        {},
+        utils.make_setqflistactions(function(item)
           return { filename = item.v }
         end),
-      },
-      mappings = {
-        ["<c-q>"] = "setqflist",
-      },
+        props.actions or {}
+      ),
     }, props)
   )
 end
