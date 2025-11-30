@@ -1,11 +1,10 @@
-local Actions = require("artio.actions")
 local View = require("artio.view")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
 ---@alias artio.Picker.hl [[integer, integer], string]
----@alias artio.Picker.action fun(self: artio.Picker, co: thread)
+---@alias artio.Picker.action fun(self: artio.Picker)
 
 ---@class artio.Picker.config
 ---@field items artio.Picker.item[]|string[]
@@ -16,60 +15,22 @@ local View = require("artio.view")
 ---@field preview_item? fun(item: any): integer, fun(win: integer)
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
----@field actions? table<string, artio.Picker.action>
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
 ---@field opts? artio.config.opts
 ---@field win? artio.config.win
+---@field actions? table<string, artio.Picker.action>
 ---@field mappings? table<string, 'up'|'down'|'accept'|'cancel'|'togglepreview'|string>
 
 ---@class artio.Picker : artio.Picker.config
+---@field co thread|nil
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
 ---@field marked table<integer, true|nil>
----@field actions? artio.Actions
 local Picker = {}
 Picker.__index = Picker
 Picker.active_picker = nil
-
-local action_enum = {
-  accept = 0,
-  cancel = 1,
-}
-
----@type table<string, fun(self: artio.Picker, co: thread)>
-local default_actions = {
-  down = function(self, _)
-    self.idx = self.idx + 1
-    self.view:showmatches() -- adjust for scrolling
-    self.view:hlselect()
-  end,
-  up = function(self, _)
-    self.idx = self.idx - 1
-    self.view:showmatches() -- adjust for scrolling
-    self.view:hlselect()
-  end,
-  accept = function(_, co)
-    coroutine.resume(co, action_enum.accept)
-  end,
-  cancel = function(_, co)
-    coroutine.resume(co, action_enum.cancel)
-  end,
-  mark = function(self, _)
-    local match = self.matches[self.idx]
-    if not match then
-      return
-    end
-    local idx = match[1]
-    self:mark(idx, not self.marked[idx])
-    self.view:showmatches() -- redraw marker
-    self.view:hlselect()
-  end,
-  togglepreview = function(self, _)
-    self.view:togglepreview()
-  end,
-}
 
 ---@param props artio.Picker.config
 function Picker:new(props)
@@ -92,12 +53,13 @@ function Picker:new(props)
 
   Picker.getitems(t, "")
 
-  t.actions = Actions:new({
-    actions = vim.tbl_extend("force", default_actions, t.actions or {}),
-  })
-
   return setmetatable(t, Picker)
 end
+
+local action_enum = {
+  accept = 0,
+  cancel = 1,
+}
 
 function Picker:open()
   if Picker.active_picker then
@@ -110,7 +72,13 @@ function Picker:open()
   coroutine.wrap(function()
     self.view:open()
 
-    local result = self.actions:init(self)
+    self:initkeymaps()
+
+    local co, ismain = coroutine.running()
+    assert(not ismain, "must be called from a coroutine")
+    self.co = co
+
+    local result = coroutine.yield()
 
     self:close()
 
@@ -139,7 +107,39 @@ function Picker:close()
     self.view:close()
   end
 
+  self:delkeymaps()
+
   self.closed = true
+end
+
+function Picker:initkeymaps()
+  local ext = require("vim._extui.shared")
+
+  ---@type vim.keymap.set.Opts
+  local opts = { buffer = ext.bufs.cmd }
+
+  if self.actions then
+    vim.iter(pairs(self.actions)):each(function(k, v)
+      vim.keymap.set("i", ("<Plug>(artio-action-%s)"):format(k), v, opts)
+    end)
+  end
+  if self.mappings then
+    vim.iter(pairs(self.mappings)):each(function(k, v)
+      vim.keymap.set("i", k, ("<Plug>(artio-action-%s)"):format(v), opts)
+    end)
+  end
+end
+
+function Picker:delkeymaps()
+  local ext = require("vim._extui.shared")
+
+  local keymaps = vim.api.nvim_buf_get_keymap(ext.bufs.cmd, "i")
+
+  vim.iter(ipairs(keymaps)):each(function(_, v)
+    if v.lhs:match("^<Plug>(artio-action-") or (v.rhs and v.rhs:match("^<Plug>(artio-action-")) then
+      vim.api.nvim_buf_del_keymap(ext.bufs.cmd, "i", v.lhs)
+    end
+  end)
 end
 
 function Picker:fix()

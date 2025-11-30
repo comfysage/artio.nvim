@@ -29,6 +29,8 @@ vim.api.nvim_create_autocmd("ColorScheme", {
   end,
 })
 
+-- == pickers ==
+
 vim.keymap.set("n", "<Plug>(artio-files)", function()
   return require("artio.builtins").files()
 end)
@@ -50,3 +52,65 @@ end)
 vim.keymap.set("n", "<Plug>(artio-smart)", function()
   return require("artio.builtins").smart()
 end)
+
+-- == actions ==
+
+local function wrap(fn)
+  return function()
+    (require("artio").wrap(fn))()
+  end
+end
+
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-down)",
+  wrap(function(self)
+    self.idx = self.idx + 1
+    self.view:showmatches() -- adjust for scrolling
+    self.view:hlselect()
+  end)
+)
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-up)",
+  wrap(function(self)
+    self.idx = self.idx - 1
+    self.view:showmatches() -- adjust for scrolling
+    self.view:hlselect()
+  end)
+)
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-accept)",
+  wrap(function(self)
+    coroutine.resume(self.co, 0)
+  end)
+)
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-cancel)",
+  wrap(function(self)
+    coroutine.resume(self.co, 1)
+  end)
+)
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-mark)",
+  wrap(function(self)
+    local match = self.matches[self.idx]
+    if not match then
+      return
+    end
+    local idx = match[1]
+    self:mark(idx, not self.marked[idx])
+    self.view:showmatches() -- redraw marker
+    self.view:hlselect()
+  end)
+)
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-togglepreview)",
+  wrap(function(self)
+    self.view:togglepreview()
+  end)
+)

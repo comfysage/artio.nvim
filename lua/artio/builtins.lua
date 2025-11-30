@@ -43,8 +43,7 @@ builtins.files = function(props)
         {},
         utils.make_setqflistactions(function(item)
           return { filename = item.v }
-        end),
-        props.actions or {}
+        end)
       ),
     }, props)
   )
@@ -101,14 +100,12 @@ builtins.grep = function(props)
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
-    actions = {
-      setqflist = utils.make_setqflist(function(item)
+    actions = extend(
+      {},
+      utils.make_setqflistactions(function(item)
         return { filename = item.v[1], lnum = item.v[2], col = item.v[3], text = item.text }
-      end),
-    },
-    mappings = {
-      ["<c-q>"] = "setqflist",
-    },
+      end)
+    ),
   }, props))
 end
 
@@ -140,14 +137,12 @@ builtins.oldfiles = function(props)
       preview_item = function(item)
         return vim.fn.bufadd(item)
       end,
-      actions = {
-        setqflist = utils.make_setqflist(function(item)
+      actions = extend(
+        {},
+        utils.make_setqflistactions(function(item)
           return { filename = item.v }
-        end),
-      },
-      mappings = {
-        ["<c-q>"] = "setqflist",
-      },
+        end)
+      ),
     }, props)
   )
 end
@@ -323,14 +318,12 @@ builtins.smart = function(props)
     preview_item = function(item)
       return vim.fn.bufadd(item)
     end,
-    actions = {
-      setqflist = utils.make_setqflist(function(item)
+    actions = extend(
+      {},
+      utils.make_setqflistactions(function(item)
         return { filename = item.v }
-      end),
-    },
-    mappings = {
-      ["<c-q>"] = "setqflist",
-    },
+      end)
+    ),
   }, props))
 end
 

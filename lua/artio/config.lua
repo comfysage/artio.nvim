@@ -56,7 +56,7 @@ M.default = {
     ["<tab>"] = "mark",
     ["<c-l>"] = "togglepreview",
     ["<c-q>"] = "setqflist",
-    ["<c-w>"] = "setqflistmark",
+    ["<m-q>"] = "setqflistmark",
   },
 }
 

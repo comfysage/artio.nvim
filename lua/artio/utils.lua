@@ -33,7 +33,7 @@ end
 ---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
 ---@return artio.Picker.action
 function utils.make_setqflist(fn)
-  return function(self, co)
+  return require("artio").wrap(function(self)
     vim.fn.setqflist(vim
       .iter(ipairs(self.matches))
       :map(function(_, match)
@@ -42,17 +42,16 @@ function utils.make_setqflist(fn)
         return qfitem
       end)
       :totable())
-    vim.schedule(function()
-      vim.cmd.copen()
-    end)
-    coroutine.resume(co, 1)
-  end
+    coroutine.resume(self.co, 1)
+  end, function(_)
+    vim.cmd.copen()
+  end)
 end
 
 ---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
 ---@return artio.Picker.action
 function utils.make_setqflistmark(fn)
-  return function(self, co)
+  return require("artio").wrap(function(self)
     vim.fn.setqflist(vim
       .iter(ipairs(self:getmarked()))
       :map(function(_, id)
@@ -61,11 +60,10 @@ function utils.make_setqflistmark(fn)
         return qfitem
       end)
       :totable())
-    vim.schedule(function()
-      vim.cmd.copen()
-    end)
-    coroutine.resume(co, 1)
-  end
+    coroutine.resume(self.co, 1)
+  end, function(_)
+    vim.cmd.copen()
+  end)
 end
 
 ---@param fn fun(item: artio.Picker.item): vim.quickfix.entry

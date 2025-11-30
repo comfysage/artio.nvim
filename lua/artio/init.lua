@@ -149,4 +149,30 @@ artio.pick = function(...)
   return Picker:new(...):open()
 end
 
+---@param fn artio.Picker.action
+---@param scheduled_fn? artio.Picker.action
+artio.wrap = function(fn, scheduled_fn)
+  return function()
+    local Picker = require("artio.picker")
+    local current = Picker.active_picker
+    if not current or current.closed then
+      return
+    end
+
+    -- whether to accept key inputs
+    if coroutine.status(current.co) ~= "suspended" then
+      return
+    end
+
+    pcall(fn, current)
+
+    if scheduled_fn == nil then
+      return
+    end
+    vim.schedule(function()
+      pcall(scheduled_fn, current)
+    end)
+  end
+end
+
 return artio
