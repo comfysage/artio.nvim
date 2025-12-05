@@ -25,6 +25,7 @@ local View = require("artio.view")
 
 ---@class artio.Picker : artio.Picker.config
 ---@field co thread|nil
+---@field input string
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
 ---@field marked table<integer, true|nil>
@@ -41,6 +42,7 @@ function Picker:new(props)
   local t = vim.tbl_deep_extend("force", {
     closed = false,
     prompt = "",
+    input = nil,
     idx = 0,
     items = {},
     matches = {},
@@ -50,6 +52,8 @@ function Picker:new(props)
   if not t.prompttext then
     t.prompttext = t.opts.prompt_title and ("%s %s"):format(t.prompt, t.opts.promptprefix) or t.opts.promptprefix
   end
+
+  t.input = t.defaulttext or ""
 
   Picker.getitems(t, "")
 
@@ -171,7 +175,9 @@ function Picker:getitems(input)
   end
 end
 
+---@param input? string
 function Picker:getmatches(input)
+  input = input or self.input
   self:getitems(input)
   self.matches = self.fn(self.items, input)
   table.sort(self.matches, function(a, b)
