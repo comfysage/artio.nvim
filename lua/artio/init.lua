@@ -93,7 +93,7 @@ function artio.mergesorters(strat, a, ...)
 end
 
 ---@type artio.Picker.sorter
-artio.sorter = function(lst, input)
+artio.fuzzy_sorter = function(lst, input)
   if not lst or #lst == 0 then
     return {}
   end
@@ -112,6 +112,29 @@ artio.sorter = function(lst, input)
   end
   return items
 end
+
+---@type artio.Picker.sorter
+artio.pattern_sorter = function(lst, input)
+  local match = string.match(input, "^/[^/]*/")
+  local pattern = match and string.match(match, "^/([^/]*)/$")
+
+  return vim
+    .iter(lst)
+    :map(function(v)
+      if pattern and not string.match(v.text, pattern) then
+        return
+      end
+
+      return { v.id, {}, 0 }
+    end)
+    :totable()
+end
+
+---@type artio.Picker.sorter
+artio.sorter = artio.mergesorters("intersect", artio.pattern_sorter, function(lst, input)
+  input = string.gsub(input, "^/[^/]*/", "")
+  return artio.fuzzy_sorter(lst, input)
+end)
 
 ---@generic T
 ---@param items T[] Arbitrary items
