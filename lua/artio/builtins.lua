@@ -479,4 +479,43 @@ builtins.diagnostics_buffer = function(props)
   return builtins.diagnostics(props)
 end
 
+---@class artio.picker.keymaps.Props : artio.Picker.config
+---@field modes? string[] defaults to all
+
+---@param props? artio.picker.keymaps.Props
+builtins.keymaps = function(props)
+  props = props or {}
+  props.modes = props.modes or { "n", "i", "c", "v", "x", "s", "o", "t", "l" }
+
+  ---@type vim.api.keyset.get_keymap[]
+  local lst = vim.iter(props.modes):fold({}, function(keymaps, mode)
+    vim.iter(vim.api.nvim_get_keymap(mode)):each(function(km)
+      keymaps[#keymaps + 1] = km
+    end)
+    return keymaps
+  end)
+
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "keymaps",
+      format_item = function(km)
+        return ("%s %s %s | %s"):format(km.mode, km.lhs, km.rhs, km.desc)
+      end,
+      ---@param km vim.api.keyset.get_keymap
+      on_close = function(km, _)
+        vim.schedule(function()
+          local out = vim.api.nvim_cmd({
+            cmd = ("%smap"):format(km.mode),
+            args = { km.lhs },
+          }, {
+            output = true,
+          })
+          vim.print(out)
+        end)
+      end,
+    }, props)
+  )
+end
+
 return builtins
