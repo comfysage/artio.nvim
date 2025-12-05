@@ -12,6 +12,7 @@ vim.api.nvim_create_autocmd("UIEnter", {
 })
 
 vim.cmd([[ noremap <leader>r <cmd>restart +qall!<cr> ]])
+vim.cmd([[ noremap <leader>; <Plug>(artio-resume) ]])
 
 vim.ui.select = function(...)
   return require("artio").select(...)

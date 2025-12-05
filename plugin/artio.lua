@@ -53,6 +53,10 @@ end, {
 
 -- == pickers ==
 
+vim.keymap.set("n", "<Plug>(artio-resume)", function()
+  return require("artio").resume()
+end)
+
 vim.keymap.set("n", "<Plug>(artio-files)", function()
   return require("artio.builtins").files()
 end)
