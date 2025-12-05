@@ -169,12 +169,13 @@ function Picker:fix()
   self.idx = math.min(self.idx, #self.matches)
 end
 
+local function item_is_structured(item)
+  return type(item) == "table" and item.id and item.v and item.text
+end
+
 function Picker:getitems(input)
   self.items = self.get_items and self.get_items(input) or self.items
-  if
-    #self.items > 0
-    and (type(self.items[1]) ~= "table" or not (self.items[1].v and self.items[1].id and self.items[1].text))
-  then
+  if #self.items > 0 and not item_is_structured(self.items[1]) then
     self.items = vim
       .iter(ipairs(self.items))
       :map(function(i, v)
