@@ -39,14 +39,7 @@ M.default = {
   win = {
     height = 0.4,
     hidestatusline = false, -- works best with laststatus=3
-    preview_opts = function(view)
-      return {
-        width = vim.o.columns,
-        height = view.win.height,
-        col = 0,
-        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == "none" and 0 or 2),
-      }
-    end,
+    preview_opts = nil,
   },
   mappings = {
     ["<down>"] = "down",

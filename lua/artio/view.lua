@@ -610,19 +610,28 @@ function View:updatepreview()
   end
 
   if not self.preview_win then
+    local previewopts = self.picker.win.preview_opts
+      and vim.is_callable(self.picker.win.preview_opts)
+      and self.picker.win.preview_opts(self)
     self.preview_win = vim.api.nvim_open_win(
       buf,
       false,
-      vim.tbl_extend("force", self.picker.win.preview_opts(self), {
+      vim.tbl_extend("force", {
         relative = "editor",
-        style = "minimal",
-      })
+        width = vim.o.columns,
+        height = self.win.height,
+        col = 0,
+        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == "none" and 0 or 2),
+      }, previewopts or {})
     )
   else
     vim.api.nvim_win_set_buf(self.preview_win, buf)
   end
 
-  vim.api.nvim_set_option_value("previewwindow", true, { scope = "local", win = self.preview_win })
+  vim._with({ win = self.preview_win, noautocmd = true }, function()
+    vim.api.nvim_set_option_value("previewwindow", true, { scope = "local" })
+    vim.api.nvim_set_option_value("eventignorewin", "all,-FileType", { scope = "local" })
+  end)
 
   if on_win and vim.is_callable(on_win) then
     on_win(self.preview_win)
