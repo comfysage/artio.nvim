@@ -1,6 +1,35 @@
 local cmdline = require("vim._extui.cmdline")
 local ext = require("vim._extui.shared")
 
+local _log = {}
+local _loglevel = vim.log.levels.ERROR
+---@private
+---@param msgwrapped { [1]: string, [2]: string? }
+---@param level? integer
+local function logadd(msgwrapped, level)
+  level = level or vim.log.levels.DEBUG
+  if level < _loglevel then
+    return
+  end
+  _log[#_log + 1] = msgwrapped
+end
+---@private
+---@param msg string
+local function logdebug(msg)
+  logadd({ msg .. "\n" })
+end
+---@private
+---@param msg string
+---@param v any
+local function logdbg(msg, v)
+  logdebug(string.format("%s: %s\n", msg, (vim.inspect(v))))
+end
+---@private
+---@param msg string
+local function logerror(msg)
+  logadd({ msg .. "\n", "ErrorMsg" }, vim.log.levels.ERROR)
+end
+
 local prompt_hl_id = vim.api.nvim_get_hl_id_by_name("ArtioPrompt")
 
 --- Set the 'cmdheight' and cmdline window height. Reposition message windows.
@@ -28,6 +57,7 @@ end
 ---@field picker artio.Picker
 ---@field closed boolean
 ---@field opts table<'win'|'buf'|'g',table<string,any>>
+---@field marks table<string|integer, integer>
 ---@field win artio.View.win
 ---@field preview_win integer
 local View = {}
@@ -35,12 +65,19 @@ View.__index = View
 
 ---@param picker artio.Picker
 function View:new(picker)
+  ---@diagnostic disable-next-line: undefined-field
+  if picker.log_level then
+    ---@diagnostic disable-next-line: undefined-field
+    _loglevel = picker.log_level
+  end
+
   return setmetatable({
     picker = picker,
     closed = false,
     opts = {},
+    marks = {},
     win = {
-      height = 0,
+      height = 1,
     },
   }, View)
 end
@@ -49,6 +86,14 @@ end
 ---@field height integer
 
 local prompthl_id = -1
+
+--- gets updated before draw
+local before_draw_tick = 0
+--- gets updated after changedtick event
+local last_draw_tick = 0
+local function get_changedtick()
+  return vim.api.nvim_buf_get_changedtick(ext.bufs.cmd)
+end
 
 local cmdbuff = "" ---@type string Stored cmdline used to calculate translation offset.
 local promptlen = 0 -- Current length of the last line in the prompt.
@@ -71,12 +116,14 @@ function View:setprompttext(content, prompt)
     cmdbuff = cmdbuff .. chunk[2]
   end
   lines[#lines] = ("%s%s"):format(promptstr, vim.fn.strtrans(cmdbuff))
+
+  self:promptpos()
   self:setlines(promptidx, promptidx + 1, lines)
   vim.fn.prompt_setprompt(ext.bufs.cmd, promptstr)
   vim.schedule(function()
     local ok, result = pcall(vim.api.nvim_buf_set_mark, ext.bufs.cmd, ":", promptidx + 1, 0, {})
     if not ok then
-      vim.notify(("Failed to set mark %d:%d\n\t%s"):format(promptidx, promptlen, result), vim.log.levels.ERROR)
+      logerror(("Failed to set mark %d:%d\n\t%s"):format(promptidx, promptlen, result))
       return
     end
   end)
@@ -102,26 +149,29 @@ function View:show(content, pos, firstc, prompt, indent, level, hl_id)
   ext.msg.virt.last = { {}, {}, {}, {} }
 
   self:clear()
+  prompthl_id = hl_id
 
   local cmd_text = ""
   for _, chunk in ipairs(content) do
     cmd_text = cmd_text .. chunk[2]
   end
 
-  self.picker:getmatches(cmd_text)
   self:showmatches()
 
-  self:promptpos()
   self:setprompttext(content, ("%s%s%s"):format(firstc, prompt, (" "):rep(indent)))
   self:updatecursor(pos)
 
-  local height = math.max(1, vim.api.nvim_win_text_height(ext.wins.cmd, {}).all)
-  height = math.min(height, self.win.height)
-  win_config(ext.wins.cmd, false, height)
+  self:updatewinheight()
 
-  prompthl_id = hl_id
   self:drawprompt()
   self:hlselect()
+end
+
+---@param predicted? integer The predicted height of the cmdline window
+function View:updatewinheight(predicted)
+  local height = math.max(1, predicted or vim.api.nvim_win_text_height(ext.wins.cmd, {}).all)
+  height = math.min(height, self.win.height)
+  win_config(ext.wins.cmd, false, height)
 end
 
 function View:saveview()
@@ -176,9 +226,11 @@ function View:setopts(restore)
   end
 end
 
-local maxlistheight = 0 -- Max height of the matches list (`self.win.height - 1`)
+local maxlistheight = 1 -- Max height of the matches list (`self.win.height - 1`)
 
 function View:on_resized()
+  logdebug("on_resized")
+
   if self.picker.win.height > 1 then
     self.win.height = self.picker.win.height
   else
@@ -186,19 +238,23 @@ function View:on_resized()
   end
   self.win.height = math.max(math.ceil(self.win.height), 1)
 
-  maxlistheight = self.win.height - 1
+  maxlistheight = math.max(self.win.height - 1, 1)
 end
 
 function View:open()
   if not self.picker then
     return
   end
+  _log = nil
+  _log = {}
 
   ext.check_targets()
 
   self.prev_show = cmdline.cmdline_show
 
   vim.schedule(function()
+    self.augroup = vim.api.nvim_create_augroup("artio:group", { clear = true })
+
     vim.api.nvim_create_autocmd({ "CmdlineLeave", "ModeChanged" }, {
       group = self.augroup,
       once = true,
@@ -207,10 +263,17 @@ function View:open()
       end,
     })
 
-    vim.api.nvim_create_autocmd("VimResized", {
+    vim.api.nvim_create_autocmd({ "VimResized", "WinEnter" }, {
       group = self.augroup,
       callback = function()
         self:on_resized()
+      end,
+    })
+
+    vim.api.nvim_create_autocmd("WinEnter", {
+      group = self.augroup,
+      callback = function()
+        self:update(true)
       end,
     })
 
@@ -231,23 +294,17 @@ function View:open()
     })
   end)
 
-  self:on_resized()
-
   cmdline.cmdline_show = function(...)
     return self:show(...)
   end
 
+  cmdline.indent = 1
+  cmdline.level = 0
+
   self:saveview()
 
-  cmdline.cmdline_show(
-    { self.picker.defaulttext and { 0, self.picker.defaulttext } or nil },
-    -1,
-    "",
-    self.picker.prompttext,
-    1,
-    0,
-    prompt_hl_id
-  )
+  -- initial render
+  self:trigger_show()
 
   vim._with({ noautocmd = true }, function()
     vim.api.nvim_set_current_win(ext.wins.cmd)
@@ -255,17 +312,17 @@ function View:open()
 
   self:setopts()
 
-  vim.schedule(function()
-    self:clear()
-    self:updatecursor()
-  end)
-
+  -- start insert *before* registering events
+  self:updatecursor()
   vim._with({ noautocmd = true }, function()
     vim.cmd.startinsert()
   end)
 
-  vim._with({ win = ext.wins.cmd, wo = { eventignorewin = "" } }, function()
-    vim.api.nvim_exec_autocmds("WinEnter", {})
+  -- trigger after registering events
+  vim.schedule(function()
+    vim._with({ win = ext.wins.cmd, wo = { eventignorewin = "" } }, function()
+      vim.api.nvim_exec_autocmds("WinEnter", {})
+    end)
   end)
 end
 
@@ -277,6 +334,7 @@ function View:close()
   self:closepreview()
   vim.schedule(function()
     pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
+    pcall(vim.api.nvim_buf_detach, ext.bufs.cmd)
 
     vim.cmd.stopinsert()
 
@@ -296,6 +354,8 @@ function View:close()
     self.closed = true
 
     self.picker:close()
+
+    vim.api.nvim_echo(_log, true, {})
   end)
 end
 
@@ -328,16 +388,50 @@ function View:hide()
   win_config(ext.wins.cmd, true, ext.cmdheight)
 end
 
-function View:update()
+function View:trigger_show()
+  logdebug("trigger_show")
+  cmdline.cmdline_show(
+    { { 0, self.picker.input } },
+    -1,
+    "",
+    self.picker.prompttext,
+    cmdline.indent,
+    cmdline.level,
+    prompt_hl_id
+  )
+end
+
+---@param force? boolean
+function View:update(force)
+  if not force and before_draw_tick < last_draw_tick and before_draw_tick == get_changedtick() - 1 then
+    logdebug("update (skip-redraw)")
+    return self:drawprompt()
+  end
+
+  logdebug("update")
+
   local text = vim.api.nvim_get_current_line()
   text = text:sub(promptlen + 1)
 
-  cmdline.cmdline_show({ { 0, text } }, -1, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
+  self.picker.input = text
+
+  vim.schedule(coroutine.wrap(function()
+    logdebug("getmatches")
+    self.picker:getmatches()
+
+    if self.closed then
+      return
+    end
+
+    vim.schedule_wrap(self.trigger_show)(self)
+  end))
 end
 
 local curpos = { 0, 0 } -- Last drawn cursor position. absolute
 ---@param pos? integer relative to prompt
 function View:updatecursor(pos)
+  logdebug("updatecursor")
+
   self:promptpos()
 
   if not pos or pos < 0 then
@@ -361,14 +455,14 @@ function View:updatecursor(pos)
   vim._with({ noautocmd = true }, function()
     local ok, _ = pcall(vim.api.nvim_win_set_cursor, ext.wins.cmd, curpos)
     if not ok then
-      vim.notify(("Failed to set cursor %d:%d"):format(curpos[1], curpos[2]), vim.log.levels.ERROR)
+      logerror(("Failed to set cursor %d:%d"):format(curpos[1], curpos[2]))
     end
   end)
 end
 
 function View:clear()
   cmdline.srow = self.picker.opts.bottom and 0 or 1
-  cmdline.erow = 0
+  cmdline.erow = cmdline.srow
   self:setlines(0, -1, {})
 end
 
@@ -377,9 +471,17 @@ function View:promptpos()
 end
 
 function View:setlines(posstart, posend, lines)
-  vim._with({ noautocmd = true }, function()
-    vim.api.nvim_buf_set_lines(ext.bufs.cmd, posstart, posend, false, lines)
-  end)
+  -- update winheight to prevent wrong scroll when increasing from 1
+  local diff = #lines - (posend - posstart)
+  if diff ~= 0 then
+    local height = vim.api.nvim_win_text_height(ext.wins.cmd, {}).all
+    local predicted = height + diff
+    self:updatewinheight(predicted)
+  end
+
+  before_draw_tick = get_changedtick()
+  vim.api.nvim_buf_set_lines(ext.bufs.cmd, posstart, posend, false, lines)
+  last_draw_tick = get_changedtick()
 end
 
 local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
@@ -393,11 +495,19 @@ local ext_priority = {
   match = 64,
 }
 
+---@param id? string|integer
 ---@param line integer 0-based
 ---@param col integer 0-based
 ---@param opts vim.api.keyset.set_extmark
 ---@return integer
-function View:mark(line, col, opts)
+function View:mark(id, line, col, opts)
+  if id and self.marks[id] then
+    vim._with({ noautocmd = true }, function()
+      vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.marks[id])
+    end)
+    self.marks[id] = nil
+  end
+
   opts.hl_mode = "combine"
   opts.invalidate = true
 
@@ -406,17 +516,24 @@ function View:mark(line, col, opts)
     ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
   end)
   if not ok then
-    vim.notify(("Failed to add extmark %d:%d\n\t%s"):format(line, col, result), vim.log.levels.ERROR)
+    logerror(("Failed to add extmark %d:%d\n\t%s"):format(line, col, result))
     return -1
+  end
+
+  if id and result >= 0 then
+    self.marks[id] = result
   end
 
   return result
 end
 
 function View:drawprompt()
+  logdebug("drawprompt")
+
+  self:promptpos()
   if promptlen > 0 and prompthl_id > 0 then
-    self:mark(promptidx, 0, { hl_group = prompthl_id, end_col = promptlen, priority = ext_priority.prompt })
-    self:mark(promptidx, 0, {
+    self:mark("prompthl", promptidx, 0, { hl_group = prompthl_id, end_col = promptlen, priority = ext_priority.prompt })
+    self:mark("promptinfo", promptidx, 0, {
       virt_text = {
         {
           ("[%d] (%d/%d)"):format(self.picker.idx, #self.picker.matches, #self.picker.items),
@@ -492,15 +609,15 @@ function View:showmatches()
       lines[#lines + 1] = ""
     end
   end
-  cmdline.erow = cmdline.srow + #lines
   self:setlines(cmdline.srow, cmdline.erow, lines)
+  cmdline.erow = cmdline.srow + #lines
 
   for i = 1, #lines do
     local has_icon = icons[i] and icons[i][1] and true
     local icon_indent = has_icon and (#icons[i][1] + icon_pad) or 0
 
     if has_icon and icons[i][2] then
-      self:mark(cmdline.srow + i - 1, indent, {
+      self:mark(nil, cmdline.srow + i - 1, indent, {
         end_col = indent + icon_indent,
         hl_group = icons[i][2],
         priority = ext_priority.icon,
@@ -511,7 +628,7 @@ function View:showmatches()
     if line_hls then
       for j = 1, #line_hls do
         local hl = line_hls[j]
-        self:mark(cmdline.srow + i - 1, indent + icon_indent + hl[1][1], {
+        self:mark(nil, cmdline.srow + i - 1, indent + icon_indent + hl[1][1], {
           end_col = indent + icon_indent + hl[1][2],
           hl_group = hl[2],
           priority = ext_priority.hl,
@@ -520,7 +637,7 @@ function View:showmatches()
     end
 
     if marks[i] then
-      self:mark(cmdline.srow + i - 1, indent - 1, {
+      self:mark(nil, cmdline.srow + i - 1, indent - 1, {
         virt_text = { { self.picker.opts.marker, "ArtioMarker" } },
         virt_text_pos = "overlay",
         priority = ext_priority.marker,
@@ -530,7 +647,7 @@ function View:showmatches()
     if hls[i] then
       for j = 1, #hls[i] do
         local col = indent + icon_indent + hls[i][j]
-        self:mark(cmdline.srow + i - 1, col, {
+        self:mark(nil, cmdline.srow + i - 1, col, {
           hl_group = "ArtioMatch",
           end_col = col + 1,
           priority = ext_priority.match,
@@ -541,12 +658,6 @@ function View:showmatches()
 end
 
 function View:hlselect()
-  if self.select_ext then
-    vim._with({ noautocmd = true }, function()
-      vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.select_ext)
-    end)
-  end
-
   self:softupdatepreview()
 
   self.picker:fix()
@@ -557,11 +668,8 @@ function View:hlselect()
 
   self:updateoffset()
   local row = math.max(0, math.min(cmdline.srow + (idx - offset), cmdline.erow) - 1)
-  if row == promptidx then
-    return
-  end
 
-  local extid = self:mark(row, 0, {
+  self:mark("hlselect", row, 0, {
     virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
     virt_text_pos = "overlay",
 
@@ -572,9 +680,6 @@ function View:hlselect()
 
     priority = ext_priority.select,
   })
-  if extid ~= -1 then
-    self.select_ext = extid
-  end
 end
 
 function View:togglepreview()
