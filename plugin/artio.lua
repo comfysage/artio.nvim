@@ -59,6 +59,12 @@ end)
 vim.keymap.set("n", "<Plug>(artio-colorschemes)", function()
   return require("artio.builtins").colorschemes()
 end)
+vim.keymap.set("n", "<Plug>(artio-diagnostics)", function()
+  return require("artio.builtins").diagnostics()
+end)
+vim.keymap.set("n", "<Plug>(artio-diagnostics-buffer)", function()
+  return require("artio.builtins").diagnostics_buffer()
+end)
 
 -- == actions ==
 

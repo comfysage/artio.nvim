@@ -405,4 +405,78 @@ builtins.highlights = function(props)
   )
 end
 
+---@private
+---@param severity vim.diagnostic.Severity
+---@return string
+local function get_severity_hl(severity)
+  if severity == vim.diagnostic.severity.ERROR then
+    return "DiagnosticError"
+  elseif severity == vim.diagnostic.severity.WARN then
+    return "DiagnosticWarn"
+  elseif severity == vim.diagnostic.severity.INFO then
+    return "DiagnosticInfo"
+  elseif severity == vim.diagnostic.severity.HINT then
+    return "DiagnosticHint"
+  end
+  return ""
+end
+
+---@class artio.picker.diagnostics.Props : artio.Picker.config
+---@field buf? integer defaults to workspace
+
+---@param props? artio.picker.diagnostics.Props
+builtins.diagnostics = function(props)
+  props = props or {}
+  local lst = vim.diagnostic.get(props.buf)
+
+  return artio.generic(
+    lst,
+    extend({
+      prompt = "diagnostics",
+      format_item = function(item)
+        local text = item.message
+        if item.code then
+          text = ("%s [%s]"):format(text, item.code)
+        end
+        return ("%d:%d :: %s"):format(item.end_lnum, item.end_col, text)
+      end,
+      on_close = function(item, _)
+        vim.schedule(function()
+          local win = vim.fn.bufwinid(item.bufnr)
+          if win < 0 then
+            vim.api.nvim_win_set_buf(0, item.bufnr)
+            win = 0
+          end
+          vim.api.nvim_set_current_win(win)
+          vim.api.nvim_win_set_cursor(win, { item.end_lnum + 1, item.end_col })
+        end)
+      end,
+      hl_item = function(item)
+        return {
+          { { 0, #item.text }, get_severity_hl(item.v.severity) },
+        }
+      end,
+      get_icon = function(item)
+        if item.v.severity == vim.diagnostic.severity.ERROR then
+          return "E", get_severity_hl(item.v.severity)
+        elseif item.v.severity == vim.diagnostic.severity.WARN then
+          return "W", get_severity_hl(item.v.severity)
+        elseif item.v.severity == vim.diagnostic.severity.INFO then
+          return "I", get_severity_hl(item.v.severity)
+        elseif item.v.severity == vim.diagnostic.severity.HINT then
+          return "H", get_severity_hl(item.v.severity)
+        end
+        return " "
+      end,
+    }, props)
+  )
+end
+
+---@param props? artio.picker.diagnostics.Props
+builtins.diagnostics_buffer = function(props)
+  props = props or {}
+  props.buf = props.buf or vim.api.nvim_get_current_buf()
+  return builtins.diagnostics(props)
+end
+
 return builtins
