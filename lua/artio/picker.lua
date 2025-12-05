@@ -66,8 +66,8 @@ local action_enum = {
 }
 
 function Picker:open()
-  if Picker.active_picker then
-    Picker.active_picker:close()
+  if Picker.active_picker and Picker.active_picker ~= self then
+    Picker.active_picker:close(true)
   end
   Picker.active_picker = self
 
@@ -102,7 +102,8 @@ function Picker:open()
   end)()
 end
 
-function Picker:close()
+---@param free? boolean
+function Picker:close(free)
   if self.closed then
     return
   end
@@ -114,6 +115,23 @@ function Picker:close()
   self:delkeymaps()
 
   self.closed = true
+
+  if free then
+    self:free()
+  end
+end
+
+function Picker:free()
+  if self == nil then
+    return
+  end
+  self.items = nil
+  self.matches = nil
+  self.marked = nil
+  self = nil
+  vim.schedule(function()
+    collectgarbage("collect")
+  end)
 end
 
 function Picker:initkeymaps()
