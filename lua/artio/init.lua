@@ -109,6 +109,11 @@ artio.pattern_sorter = function(lst, input)
   end)
 end
 
+--- the default sorter provides support for pattern matching. a `/.../` match
+--- at the start of the input will limit the fuzzy sorter to items matching the
+--- pattern. if you want to use `/.../` in your fuzzy matches, make sure to
+--- escape it by starting the input with an empty space (` /.../`). fuzzy
+--- sorting will be done on the input with the pattern removed.
 ---@type artio.Picker.sorter
 artio.sorter = artio.mergesorters("intersect", artio.pattern_sorter, function(lst, input)
   input = string.gsub(input, "^/[^/]*/", "")
