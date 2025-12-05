@@ -18,6 +18,10 @@ local builtins = {}
 
 local findprg = "fd -H -p -t f --color=never"
 
+---@class artio.picker.files.Props : artio.Picker.config
+---@field findprg? string
+
+---@param props? artio.picker.files.Props
 builtins.files = function(props)
   props = props or {}
   props.findprg = props.findprg or findprg
@@ -49,11 +53,16 @@ builtins.files = function(props)
   )
 end
 
+---@class artio.picker.grep.Props : artio.Picker.config
+---@field grepprg? string
+
+---@param props? artio.picker.grep.Props
 builtins.grep = function(props)
   props = props or {}
+  props.grepprg = props.grepprg or vim.o.grepprg
 
   local ext = require("vim._extui.shared")
-  local grepcmd = utils.make_cmd(vim.o.grepprg)
+  local grepcmd = utils.make_cmd(props.grepprg)
 
   return artio.pick(extend({
     items = {},
