@@ -180,6 +180,14 @@ artio.schedule = function(f)
   end)
 end
 
+artio.resume = function()
+  local picker = require("artio.picker").active_picker
+  if not picker or not picker.closed then
+    return
+  end
+  picker:resume()
+end
+
 ---@param fn artio.Picker.action
 ---@param scheduled_fn? artio.Picker.action
 artio.wrap = function(fn, scheduled_fn)

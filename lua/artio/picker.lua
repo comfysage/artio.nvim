@@ -115,6 +115,15 @@ function Picker:open()
   end)()
 end
 
+function Picker:resume()
+  if not self.closed then
+    return
+  end
+  self.closed = false
+
+  self:open()
+end
+
 ---@param free? boolean
 function Picker:close(free)
   if self.closed then
