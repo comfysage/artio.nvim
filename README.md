@@ -50,6 +50,9 @@ require("artio").setup({
   },
 })
 
+-- this is needed to avoid racing with extui when use `opts.bottom=true`
+vim.o.showmode = false
+
 -- override built-in ui select with artio
 vim.ui.select = require("artio").select
 
