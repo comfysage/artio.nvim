@@ -152,6 +152,8 @@ function View:setopts(restore)
     },
     g = {
       laststatus = self.picker.win.hidestatusline and 0 or nil,
+      showmode = false,
+      showcmd = false,
     },
   }
 
