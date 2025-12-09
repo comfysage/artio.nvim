@@ -48,6 +48,17 @@ require("artio").setup({
     height = 12,
     hidestatusline = false, -- works best with laststatus=3
   },
+  -- NOTE: if you override the mappings, make sure to provide keys for all actions
+  mappings = {
+    ["<down>"] = "down",
+    ["<up>"] = "up",
+    ["<cr>"] = "accept",
+    ["<esc>"] = "cancel",
+    ["<tab>"] = "mark",
+    ["<c-l>"] = "togglepreview",
+    ["<c-q>"] = "setqflist",
+    ["<m-q>"] = "setqflistmark",
+  },
 })
 
 -- override built-in ui select with artio
