@@ -67,7 +67,7 @@ local function tmerge(tdefault, toverride)
     return tdefault
   end
 
-  if vim.islist(tdefault) then
+  if tdefault == vim.NIL or vim.islist(tdefault) then
     return toverride
   end
   if vim.tbl_isempty(tdefault) then
@@ -93,11 +93,13 @@ end
 ---@param toverride artio.config
 ---@return artio.config
 function M.merge(tdefault, toverride)
-  if vim.fn.has("nvim-0.11.0") == 1 then
-    toverride =
-      vim.tbl_deep_extend("keep", toverride, { editor = { float = { solid_border = vim.o.winborder == "solid" } } })
-  end
-  return tmerge(tdefault, toverride)
+  local defaults = vim.deepcopy(tdefault, true)
+  local mappings = tdefault.mappings
+  defaults.mappings = vim.NIL
+  local t = tmerge(defaults, toverride)
+  t.mappings = toverride.mappings or mappings
+
+  return t
 end
 
 ---@return artio.config
