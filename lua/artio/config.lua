@@ -50,6 +50,8 @@ M.default = {
     ["<c-l>"] = "togglepreview",
     ["<c-q>"] = "setqflist",
     ["<m-q>"] = "setqflistmark",
+    ["<c-s>"] = "split",
+    ["<c-v>"] = "vsplit",
   },
 }
 

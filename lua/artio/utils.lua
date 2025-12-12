@@ -75,4 +75,31 @@ function utils.make_setqflistactions(fn)
   }
 end
 
+---@param fn fun(item: artio.Picker.item): integer
+---@return table<string, artio.Picker.action>
+function utils.make_fileactions(fn)
+  return {
+    split = require("artio").wrap(function(self)
+      coroutine.resume(self.co, 1)
+    end, function(self)
+      local item = self:getcurrent()
+      if not item then
+        return
+      end
+      local buf = fn(item)
+      vim.api.nvim_open_win(buf, true, { win = -1, vertical = false })
+    end),
+    vsplit = require("artio").wrap(function(self)
+      coroutine.resume(self.co, 1)
+    end, function(self)
+      local item = self:getcurrent()
+      if not item then
+        return
+      end
+      local buf = fn(item)
+      vim.api.nvim_open_win(buf, true, { win = -1, vertical = true })
+    end),
+  }
+end
+
 return utils
