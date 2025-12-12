@@ -99,6 +99,26 @@ function utils.make_fileactions(fn)
       local buf = fn(item)
       vim.api.nvim_open_win(buf, true, { win = -1, vertical = true })
     end),
+    tabnew = require("artio").wrap(function(self)
+      coroutine.resume(self.co, 1)
+    end, function(self)
+      local item = self:getcurrent()
+      if not item then
+        return
+      end
+      local buf = fn(item)
+      vim.api.nvim_cmd({
+        cmd = "split",
+        args = { ("+%dbuf"):format(buf) },
+        ---@diagnostic disable-next-line: missing-fields
+        mods = {
+          tab = 1,
+          silent = true,
+        },
+      }, {
+        output = false,
+      })
+    end),
   }
 end
 
