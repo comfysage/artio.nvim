@@ -164,6 +164,14 @@ function Picker:delkeymaps()
   end)
 end
 
+function Picker:accept()
+  coroutine.resume(self.co, action_enum.accept)
+end
+
+function Picker:cancel()
+  coroutine.resume(self.co, action_enum.cancel)
+end
+
 function Picker:fix()
   self.idx = math.max(self.idx, self.opts.preselect and 1 or 0)
   self.idx = math.min(self.idx, #self.matches)

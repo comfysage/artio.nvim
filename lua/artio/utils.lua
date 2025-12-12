@@ -42,7 +42,7 @@ function utils.make_setqflist(fn)
         return qfitem
       end)
       :totable())
-    coroutine.resume(self.co, 1)
+    self:cancel()
   end, function(_)
     vim.cmd.copen()
   end)
@@ -60,7 +60,7 @@ function utils.make_setqflistmark(fn)
         return qfitem
       end)
       :totable())
-    coroutine.resume(self.co, 1)
+    self:cancel()
   end, function(_)
     vim.cmd.copen()
   end)
@@ -80,7 +80,7 @@ end
 function utils.make_fileactions(fn)
   return {
     split = require("artio").wrap(function(self)
-      coroutine.resume(self.co, 1)
+      self:cancel()
     end, function(self)
       local item = self:getcurrent()
       if not item then
@@ -90,7 +90,7 @@ function utils.make_fileactions(fn)
       vim.api.nvim_open_win(buf, true, { win = -1, vertical = false })
     end),
     vsplit = require("artio").wrap(function(self)
-      coroutine.resume(self.co, 1)
+      self:cancel()
     end, function(self)
       local item = self:getcurrent()
       if not item then
@@ -100,7 +100,7 @@ function utils.make_fileactions(fn)
       vim.api.nvim_open_win(buf, true, { win = -1, vertical = true })
     end),
     tabnew = require("artio").wrap(function(self)
-      coroutine.resume(self.co, 1)
+      self:cancel()
     end, function(self)
       local item = self:getcurrent()
       if not item then
