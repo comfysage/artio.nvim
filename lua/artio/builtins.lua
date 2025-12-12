@@ -47,6 +47,9 @@ builtins.files = function(props)
         {},
         utils.make_setqflistactions(function(item)
           return { filename = item.v }
+        end),
+        utils.make_fileactions(function(item)
+          return vim.fn.bufnr(item.v, true)
         end)
       ),
     }, props)

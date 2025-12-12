@@ -220,4 +220,18 @@ function Picker:getmarked()
     :totable()
 end
 
+---@param idx? integer index in items
+---@return artio.Picker.item?
+function Picker:getcurrent(idx)
+  if not idx then
+    local i = self.idx
+    idx = self.matches[i] and self.matches[i][1]
+  end
+  if not idx then
+    return
+  end
+
+  return self.items[idx]
+end
+
 return Picker
