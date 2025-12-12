@@ -96,14 +96,14 @@ vim.keymap.set(
   "i",
   "<Plug>(artio-action-accept)",
   wrap(function(self)
-    coroutine.resume(self.co, 0)
+    self:accept()
   end)
 )
 vim.keymap.set(
   "i",
   "<Plug>(artio-action-cancel)",
   wrap(function(self)
-    coroutine.resume(self.co, 1)
+    self:cancel()
   end)
 )
 vim.keymap.set(
