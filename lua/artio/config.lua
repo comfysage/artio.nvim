@@ -52,6 +52,7 @@ M.default = {
     ["<m-q>"] = "setqflistmark",
     ["<c-s>"] = "split",
     ["<c-v>"] = "vsplit",
+    ["<c-t>"] = "tabnew",
   },
 }
 
