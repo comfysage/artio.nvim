@@ -11,8 +11,9 @@ local function cmd_callback(o)
 end
 
 ---@param prg? string
+---@param opts? table
 ---@return fun(arg?: string): string[]
-function utils.make_cmd(prg)
+function utils.make_cmd(prg, opts)
   return function(arg)
     if not prg then
       return {}
@@ -23,9 +24,12 @@ function utils.make_cmd(prg)
       cmd = ("%s %s"):format(prg, arg)
     end
     return cmd_callback(vim
-      .system({ vim.o.shell, "-c", cmd }, {
-        text = true,
-      })
+      .system(
+        { vim.o.shell, "-c", cmd },
+        vim.tbl_extend("force", {
+          text = true,
+        }, opts or {})
+      )
       :wait())
   end
 end
