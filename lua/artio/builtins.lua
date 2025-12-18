@@ -16,7 +16,7 @@ end
 
 local builtins = {}
 
-local findprg = "fd -H -p -t f --color=never"
+local findprg = "fd -H -p -a -t f --color=never"
 
 ---@class artio.picker.files.Props : artio.Picker.config
 ---@field findprg? string
@@ -26,7 +26,10 @@ builtins.files = function(props)
   props = props or {}
   props.findprg = props.findprg or findprg
 
-  local lst = utils.make_cmd(props.findprg)()
+  local base_dir = vim.fn.getcwd(0)
+  local lst = utils.make_cmd(props.findprg, {
+    cwd = base_dir,
+  })()
 
   return artio.generic(
     lst,
@@ -36,6 +39,9 @@ builtins.files = function(props)
         vim.schedule(function()
           vim.cmd.edit(text)
         end)
+      end,
+      format_item = function(item)
+        return vim.fs.relpath(base_dir, item) or item
       end,
       get_icon = config.get().opts.use_icons and function(item)
         return require("mini.icons").get("file", item.v)
@@ -288,7 +294,10 @@ builtins.smart = function(props)
   currentfile = vim.fs.abspath(currentfile)
 
   props.findprg = props.findprg or findprg
-  local lst = utils.make_cmd(props.findprg)()
+  local base_dir = vim.fn.getcwd(0)
+  local lst = utils.make_cmd(props.findprg, {
+    cwd = base_dir,
+  })()
 
   local pwd = vim.fn.getcwd()
   local recentlst = vim
@@ -329,6 +338,9 @@ builtins.smart = function(props)
       vim.schedule(function()
         vim.cmd.edit(text)
       end)
+    end,
+    format_item = function(item)
+      return vim.fs.relpath(base_dir, item) or item
     end,
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v)
