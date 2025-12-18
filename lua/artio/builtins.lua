@@ -90,7 +90,9 @@ builtins.grep = function(props)
   props.grepprg = props.grepprg or vim.o.grepprg
 
   local ext = require("vim._extui.shared")
-  local grepcmd = utils.make_cmd(props.grepprg)
+  local grepcmd = utils.make_cmd(props.grepprg, {
+    cwd = vim.fn.getcwd(0),
+  })
 
   return artio.pick(extend({
     items = {},
