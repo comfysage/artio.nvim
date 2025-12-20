@@ -15,6 +15,18 @@ Requires Neovim `>= 0.12`
 - Icon support for common filetypes through [mini.icons](https://github.com/echasnovski/mini.nvim) _(optional)_
 - No heavy dependencies - pure Lua
 
+### extui
+
+artio requires the extui to be enabled.
+
+an example of how to set this up is:
+
+```lua
+require("vim._extui").enable({ enable = true, msg = {
+  target = "msg",
+} })
+```
+
 ## installation
 
 `vim.pack`
