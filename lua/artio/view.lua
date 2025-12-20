@@ -255,11 +255,20 @@ function View:open()
   vim.schedule(function()
     self.augroup = vim.api.nvim_create_augroup("artio:group", { clear = true })
 
-    vim.api.nvim_create_autocmd({ "CmdlineLeave", "ModeChanged" }, {
+    vim.api.nvim_create_autocmd("CmdlineLeave", {
       group = self.augroup,
       once = true,
       callback = function()
         self:close()
+      end,
+    })
+
+    vim.api.nvim_create_autocmd("ModeChanged", {
+      group = self.augroup,
+      callback = function(ev)
+        if string.match(ev.match, "^i:") then
+          self:close()
+        end
       end,
     })
 
