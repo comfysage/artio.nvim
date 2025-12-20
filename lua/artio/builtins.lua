@@ -16,7 +16,8 @@ end
 
 local builtins = {}
 
-local findprg = "fd -H -p -a -t f --color=never"
+local findprg = vim.fn.executable("fd") == 1 and "fd -H -p -a -t f --color=never --"
+  or "find . -type f -iregex '.*$*.*'"
 
 ---@class artio.picker.files.Props : artio.Picker.config
 ---@field findprg? string
