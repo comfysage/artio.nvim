@@ -51,43 +51,23 @@ end
 function artio.mergesorters(strat, a, ...)
   local sorters = { a, ... } ---@type artio.Picker.sorter[]
 
-  ---@generic T
-  ---@param t T[]
-  ---@param cmp fun(T): boolean
-  ---@return integer?
-  local function findi(t, cmp)
-    for i = 1, #t do
-      if t[i] and cmp(t[i]) then
-        return i
-      end
-    end
-  end
-
   return function(lst, input)
-    local it = 0
-    return vim.iter(sorters):fold({}, function(oldmatches, sorter)
-      it = it + 1
-      ---@type artio.Picker.match[]
+    return vim.iter(ipairs(sorters)):fold({}, function(oldmatches, it, sorter)
+      ---@type artio.Picker.matches
       local newmatches = sorter(lst, input)
 
-      return vim.iter(newmatches):fold(strat == "intersect" and {} or oldmatches, function(matches, newmatch)
-        local oldmatchidx = findi(oldmatches, function(v)
-          return v[1] == newmatch[1]
-        end)
-
-        if oldmatchidx then
-          local oldmatch = oldmatches[oldmatchidx]
-          local next = mergematches(oldmatch, newmatch)
-          if strat == "intersect" then
-            matches[#matches + 1] = next
-          else
-            matches[oldmatchidx] = next
+      return vim
+        .iter(pairs(newmatches))
+        :fold(strat == "intersect" and {} or oldmatches, function(matches, idx, newmatch)
+          local oldmatch = oldmatches[idx]
+          if oldmatch then
+            local next = mergematches(oldmatch, newmatch)
+            matches[idx] = next
+          elseif strat == "combine" or it == 1 then
+            matches[idx] = newmatch
           end
-        elseif strat == "combine" or it == 1 then
-          matches[#matches + 1] = newmatch
-        end
-        return matches
-      end)
+          return matches
+        end)
     end)
   end
 end
@@ -99,16 +79,17 @@ artio.fuzzy_sorter = function(lst, input)
   end
 
   if not input or #input == 0 then
-    return vim.tbl_map(function(v)
-      return { v.id, {}, 0 }
-    end, lst)
+    return vim.iter(lst):fold({}, function(acc, v)
+      acc[v.id] = { v.id, {}, 0 }
+      return acc
+    end)
   end
 
   local matches = vim.fn.matchfuzzypos(lst, input, { key = "text" })
 
   local items = {}
   for i = 1, #matches[1] do
-    items[#items + 1] = { matches[1][i].id, matches[2][i], matches[3][i] }
+    items[matches[1][i].id] = { matches[1][i].id, matches[2][i], matches[3][i] }
   end
   return items
 end
@@ -118,16 +99,14 @@ artio.pattern_sorter = function(lst, input)
   local match = string.match(input, "^/[^/]*/")
   local pattern = match and string.match(match, "^/([^/]*)/$")
 
-  return vim
-    .iter(lst)
-    :map(function(v)
-      if pattern and not string.match(v.text, pattern) then
-        return
-      end
+  return vim.iter(lst):fold({}, function(acc, v)
+    if pattern and not string.match(v.text, pattern) then
+      return acc
+    end
 
-      return { v.id, {}, 0 }
-    end)
-    :totable()
+    acc[v.id] = { v.id, {}, 0 }
+    return acc
+  end)
 end
 
 ---@type artio.Picker.sorter
@@ -144,15 +123,16 @@ end)
 artio.select = function(items, opts, on_choice, start_opts)
   return artio.generic(
     items,
-    vim.tbl_deep_extend("force", {
-      prompt = opts.prompt,
-      on_close = function(_, idx)
-        return on_choice(items[idx], idx)
-      end,
-      format_item = opts.format_item and function(item)
-        return opts.format_item(item)
-      end or nil,
-    }, start_opts or {})
+    vim.tbl_deep_extend(
+      "force",
+      {
+        on_close = function(_, idx)
+          return on_choice(items[idx], idx)
+        end,
+      },
+      opts or {}, -- opts.prompt, opts.format_item
+      start_opts or {}
+    )
   )
 end
 

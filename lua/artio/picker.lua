@@ -2,7 +2,8 @@ local View = require("artio.view")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
----@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.match[]
+---@alias artio.Picker.matches table<integer, artio.Picker.match> id: match
+---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.matches
 ---@alias artio.Picker.hl [[integer, integer], string]
 ---@alias artio.Picker.action fun(self: artio.Picker)
 
@@ -206,7 +207,7 @@ end
 function Picker:getmatches(input)
   input = input or self.input
   self:getitems(input)
-  self.matches = self.fn(self.items, input)
+  self.matches = vim.tbl_values(self.fn(self.items, input))
   table.sort(self.matches, function(a, b)
     return a[3] > b[3]
   end)
