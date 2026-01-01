@@ -30,6 +30,23 @@ vim.api.nvim_create_autocmd({ "UIEnter", "ColorScheme" }, {
   end,
 })
 
+-- == cmd ==
+
+vim.api.nvim_create_user_command("Artio", function(opts)
+  local builtins = require("artio.builtins")
+  local builtin = builtins[opts.fargs[1]]
+  if not builtin then
+    vim.notify("unknown builtin: " .. opts.fargs[1], vim.log.levels.ERROR)
+    return
+  end
+  builtin()
+end, {
+  nargs = 1,
+  complete = function(_, _, _)
+    return vim.tbl_keys(require("artio.builtins"))
+  end,
+})
+
 -- == pickers ==
 
 vim.keymap.set("n", "<Plug>(artio-files)", function()
