@@ -28,18 +28,7 @@ builtins.builtins = function(props)
           return
         end
 
-        local Picker = require("artio.picker")
-        local current = Picker.active_picker
-        if not current or not current.closed then
-          return
-        end
-
-        vim.schedule(function()
-          vim.defer_fn(builtins[fname], 10)
-          vim.wait(1000, function()
-            return coroutine.status(current.co) == "dead"
-          end)
-        end)
+        artio.schedule(builtins[fname])
       end,
     }, props)
   )
