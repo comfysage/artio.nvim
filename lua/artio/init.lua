@@ -132,10 +132,14 @@ artio.select = function(items, opts, on_choice, start_opts)
       "force",
       {
         on_close = function(_, idx)
-          return on_choice(items[idx], idx)
+          artio.schedule(function()
+            on_choice(items[idx], idx)
+          end)
         end,
         on_quit = function()
-          return on_choice(nil, nil)
+          artio.schedule(function()
+            on_choice(nil, nil)
+          end)
         end,
       },
       opts or {}, -- opts.prompt, opts.format_item
@@ -160,6 +164,22 @@ artio.pick = function(...)
   return Picker:new(...):open()
 end
 
+---@param f fun(): any
+artio.schedule = function(f)
+  local Picker = require("artio.picker")
+  local current = Picker.active_picker
+  if not current or not current.closed then
+    return
+  end
+
+  vim.schedule(function()
+    vim.defer_fn(f, 10)
+    vim.wait(1000, function()
+      return coroutine.status(current.co) == "dead"
+    end)
+  end)
+end
+
 ---@param fn artio.Picker.action
 ---@param scheduled_fn? artio.Picker.action
 artio.wrap = function(fn, scheduled_fn)
@@ -180,7 +200,7 @@ artio.wrap = function(fn, scheduled_fn)
     if scheduled_fn == nil then
       return
     end
-    vim.schedule(function()
+    artio.schedule(function()
       pcall(scheduled_fn, current)
     end)
   end
