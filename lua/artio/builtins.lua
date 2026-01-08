@@ -419,9 +419,9 @@ builtins.highlights = function(props)
     vim.tbl_keys(hls),
     extend({
       prompt = "highlights",
-      on_close = function(line, _)
+      on_close = function(hlname, _)
         vim.schedule(function()
-          vim.print(line)
+          vim.cmd(("verbose hi %s"):format(hlname))
         end)
       end,
       format_item = function(hlname)
