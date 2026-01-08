@@ -1,0 +1,134 @@
+*artio.txt*	a minimal, nature-infused file picker for neovim using the new
+		extui window
+
+==============================================================================
+
+FEATURES						*artio-features*
+
+Requires Neovim `>= 0.12`
+
+- Lightweight picker window built on Neovim's extui
+- Prompt + list UI components - minimal and focused
+- Fuzzy filtering using matchfuzzy (built-in)
+- Optional icon support for common filetypes through mini.icons
+  (https://github.com/echasnovski/mini.nvim)
+- No heavy dependencies - pure Lua
+
+EXTUI
+
+artio requires the extui to be enabled.
+
+an example of how to set this up is:
+
+>lua
+  require("vim._extui").enable({ enable = true, msg = {
+    target = "msg",
+  } })
+<
+
+INSTALLATION
+
+`vim.pack`
+
+>lua
+  vim.pack.add({{ src = "https://github.com/comfysage/artio.nvim" }})
+<
+
+`lazy.nvim`
+
+>lua
+  {
+    "comfysage/artio.nvim", lazy = false,
+  }
+<
+
+==============================================================================
+
+CONFIGURATION							*artio-config*
+
+Options ~
+
+options that change default behavior of the picker.
+
+>lua
+  {
+    opts = {
+      preselect = true, -- whether to preselect the first match
+      bottom = true, -- whether to draw the prompt at the bottom
+      shrink = true, -- whether the window should shrink to fit the matches
+      promptprefix = "", -- prefix for the prompt
+      prompt_title = true, -- whether to draw the prompt title
+      pointer = "", -- pointer for the selected match
+      use_icons = true, -- requires mini.icons
+    },
+  }
+<
+
+Window Options ~
+
+some less used options for the picker window and its render logic.
+
+>lua
+  {
+    win = {
+      height = 12,
+      hidestatusline = false, -- works best with laststatus=3
+    },
+  }
+<
+
+Mappings ~
+
+these override the default mappings for any picker.
+these map keys to actions. its allowed to use multiple keys for the same
+action.
+
+NOTE: if you override the mappings, make sure to provide keys for all actions
+
+>lua
+  {
+    mappings = {
+      ["<down>"] = "down",
+      ["<up>"] = "up",
+      ["<cr>"] = "accept",
+      ["<esc>"] = "cancel",
+      ["<tab>"] = "mark",
+      ["<c-l>"] = "togglepreview",
+      ["<c-q>"] = "setqflist",
+      ["<m-q>"] = "setqflistmark",
+    },
+  }
+<
+
+Setup ~
+
+after setting up artio with your options there are some additional things to
+setup.
+
+Keymaps for artio are set using the |<Plug>| interface. These bindings are set
+by the api and can be rebound by the user to specific keybindings.
+
+By default there are <Plug> bindings for all builtins. |artio-builtins|
+
+Example ~
+
+>lua
+  require('artio').setup({})
+
+  -- override built-in ui select with artio
+  vim.ui.select = require("artio").select
+
+  vim.keymap.set("n", "<leader><leader>", "<Plug>(artio-files)")
+  vim.keymap.set("n", "<leader>fg", "<Plug>(artio-grep)")
+
+  -- smart file picker
+  vim.keymap.set("n", "<leader>ff", "<Plug>(artio-smart)")
+
+  -- general built-in pickers
+  vim.keymap.set("n", "<leader>fh", "<Plug>(artio-helptags)")
+  vim.keymap.set("n", "<leader>fb", "<Plug>(artio-buffers)")
+  vim.keymap.set("n", "<leader>f/", "<Plug>(artio-buffergrep)")
+  vim.keymap.set("n", "<leader>fo", "<Plug>(artio-oldfiles)")
+<
+
+ vim:tw=78:ts=8:noet:ft=help:norl:
