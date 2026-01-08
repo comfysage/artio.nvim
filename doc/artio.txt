@@ -44,7 +44,7 @@ INSTALLATION
 
 ==============================================================================
 
-CONFIGURATION							*artio-config*
+CONFIGURATION						*artio-config*
 
 Options ~
 
@@ -130,5 +130,107 @@ Example ~
   vim.keymap.set("n", "<leader>f/", "<Plug>(artio-buffergrep)")
   vim.keymap.set("n", "<leader>fo", "<Plug>(artio-oldfiles)")
 <
+
+==============================================================================
+
+API							*artio-api*
+
+artio.resume()						*artio-resume*
+
+  resume the last closed picker. does not work across neovim
+  restarts/sessions.
+
+  Plug: `<Plug>(artio-resume)`.
+
+API-BUILTINS
+
+artio builtins are for general editor use. they are accessible through
+`require('artio.builtins')`.
+
+builtins.builtins()					*artio-builtins*
+
+  list of all builtins.
+
+  Plug: `<Plug>(artio-builtins)`.
+
+builtins.files()					*artio-files*
+
+  list all files within the current directory.
+
+  Plug: `<Plug>(artio-files)`.
+
+builtins.grep()						*artio-grep*
+
+  grep in the current directory.
+  runs `rg` if available; uses `grep` as a fallback.
+
+  Plug: `<Plug>(artio-grep)`.
+
+builtins.oldfiles()					*artio-oldfiles*
+
+  list all files in |v:oldfiles|; recently accessed files in neovim. these are
+  stored in |shada| memory.
+
+  Plug: `<Plug>(artio-oldfiles)`.
+
+builtins.buffergrep()					*artio-buffergrep*
+
+  grep in the current buffer. uses the default sorter to match lines.
+
+  Plug: `<Plug>(artio-buffergrep)`.
+
+builtins.helptags()					*artio-helptags*
+
+  list all help tags. behaves like |:help|.
+
+  Plug: `<Plug>(artio-helptags)`.
+
+builtins.buffers()					*artio-buffers*
+
+  list all open buffers. behaves like |:buffers|.
+
+  Plug: `<Plug>(artio-buffers)`.
+
+builtins.smart()					*artio-smart*
+
+  uses the regular files picker as a base
+  - boosts items in the bufferlist
+  - proportionally boosts items that match closely to the current file in
+    proximity within the filesystem
+
+  Plug: `<Plug>(artio-smart)`.
+
+builtins.colorschemes()					*artio-colorschemes*
+
+  list all colorschemes by finding all `colors/*.{vim,lua}` files in the
+  runtime.
+
+  Plug: `<Plug>(artio-colorschemes)`.
+
+builtins.highlights()					*artio-highlights*
+
+  list all highlights. behaves like |:highlight|.
+
+  Plug: `<Plug>(artio-highlights)`.
+
+builtins.diagnostics({buffer})				*artio-diagnostics*
+
+  list all diagnostics. uses diagnostics from |vim.diagnostic.get()|.
+  uses all diagnostics in the workspace if no buffer is specified.
+
+  Plug: `<Plug>(artio-diagnostics)`.
+
+builtins.diagnostics_buffer({buffer})		*artio-diagnostics-buffer*
+
+  list all diagnostics for the given buffer. uses diagnostics from
+  |vim.diagnostic.get()|. uses the current buffer if no buffer is specified.
+
+  Plug: `<Plug>(artio-diagnostics-buffer)`.
+
+builtins.keymaps()					*artio-keymaps*
+
+  list all keymaps. uses formatted data from |nvim_get_keymap()|.
+
+  Plug: `<Plug>(artio-keymaps)`.
 
  vim:tw=78:ts=8:noet:ft=help:norl:
