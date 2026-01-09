@@ -3,7 +3,7 @@
 
 ==============================================================================
 
-FEATURES						*artio-features*
+FEATURES                                                      *artio-features*
 
 Requires Neovim `>= 0.12`
 
@@ -44,7 +44,7 @@ INSTALLATION
 
 ==============================================================================
 
-CONFIGURATION						*artio-config*
+CONFIGURATION                                                   *artio-config*
 
 Options ~
 
@@ -133,9 +133,9 @@ Example ~
 
 ==============================================================================
 
-API							*artio-api*
+API                                                                *artio-api*
 
-artio.pick({opts})					*artio.pick()*
+artio.pick({opts})                                              *artio.pick()*
 
   create a new picker |artio.Picker| and start it.
 
@@ -146,26 +146,26 @@ artio.pick({opts})					*artio.pick()*
     })
   <
 
-artio.generic({items}, {props})				*artio.generic()*
+artio.generic({items}, {props})                              *artio.generic()*
 
   creates a generic picker from the given items and props.
   uses the default |artio.sorter| function.
 
-							*artio.select()*
+                                                              *artio.select()*
 artio.select({items}, {opts}, {on_choice}, {start_opts?})
 
   the |vim.ui.select| interface implemented for artio.
   adds an optional `{start_opts?}` argument that accepts artio specific
   options.
 
-artio.resume()						*artio.resume()*
+artio.resume()                                                *artio.resume()*
 
   resume the last closed picker. does not work across neovim
   restarts/sessions.
 
   Plug: `<Plug>(artio-resume)`.
 
-API-PICKER						*artio-api-picker*
+API-PICKER                                                  *artio-api-picker*
 
 *artio.Picker*
   a picker is a special table that holds the state of the picker.
@@ -206,7 +206,7 @@ API-PICKER						*artio-api-picker*
     - {mappings}?       (`table<string, string>`)
                         mappings from the user config.
 
-API-SORTER						*artio-api-sorter*
+API-SORTER                                                  *artio-api-sorter*
 
 *artio.Picker.sorter*
    a function that takes an array of |artio.Picker.item| and an input string
@@ -235,7 +235,7 @@ API-SORTER						*artio-api-sorter*
     - {v}       (`any`)
     - {text}    (`string`)
 
-artio.sorter({items}, {input})				*artio.sorter()*
+artio.sorter({items}, {input})                                *artio.sorter()*
 
   the default sorter provides support for pattern matching. a `/.../` match at
   the start of the input will limit the fuzzy sorter to items matching the
@@ -248,51 +248,51 @@ API-BUILTINS
 artio builtins are for general editor use. they are accessible through
 `require('artio.builtins')`.
 
-builtins.builtins()					*artio-builtins*
+builtins.builtins()                                           *artio-builtins*
 
   list of all builtins.
 
   Plug: `<Plug>(artio-builtins)`.
 
-builtins.files()					*artio-files*
+builtins.files()                                                 *artio-files*
 
   list all files within the current directory.
 
   Plug: `<Plug>(artio-files)`.
 
-builtins.grep()						*artio-grep*
+builtins.grep()                                                   *artio-grep*
 
   grep in the current directory.
   runs `rg` if available; uses `grep` as a fallback.
 
   Plug: `<Plug>(artio-grep)`.
 
-builtins.oldfiles()					*artio-oldfiles*
+builtins.oldfiles()                                           *artio-oldfiles*
 
   list all files in |v:oldfiles|; recently accessed files in neovim. these are
   stored in |shada| memory.
 
   Plug: `<Plug>(artio-oldfiles)`.
 
-builtins.buffergrep()					*artio-buffergrep*
+builtins.buffergrep()                                       *artio-buffergrep*
 
   grep in the current buffer. uses the default sorter to match lines.
 
   Plug: `<Plug>(artio-buffergrep)`.
 
-builtins.helptags()					*artio-helptags*
+builtins.helptags()                                           *artio-helptags*
 
   list all help tags. behaves like |:help|.
 
   Plug: `<Plug>(artio-helptags)`.
 
-builtins.buffers()					*artio-buffers*
+builtins.buffers()                                             *artio-buffers*
 
   list all open buffers. behaves like |:buffers|.
 
   Plug: `<Plug>(artio-buffers)`.
 
-builtins.smart()					*artio-smart*
+builtins.smart()                                                 *artio-smart*
 
   uses the regular files picker as a base
   - boosts items in the bufferlist
@@ -301,34 +301,34 @@ builtins.smart()					*artio-smart*
 
   Plug: `<Plug>(artio-smart)`.
 
-builtins.colorschemes()					*artio-colorschemes*
+builtins.colorschemes()                                   *artio-colorschemes*
 
   list all colorschemes by finding all `colors/*.{vim,lua}` files in the
   runtime.
 
   Plug: `<Plug>(artio-colorschemes)`.
 
-builtins.highlights()					*artio-highlights*
+builtins.highlights()                                       *artio-highlights*
 
   list all highlights. behaves like |:highlight|.
 
   Plug: `<Plug>(artio-highlights)`.
 
-builtins.diagnostics({buffer})				*artio-diagnostics*
+builtins.diagnostics({buffer})                             *artio-diagnostics*
 
   list all diagnostics. uses diagnostics from |vim.diagnostic.get()|.
   uses all diagnostics in the workspace if no buffer is specified.
 
   Plug: `<Plug>(artio-diagnostics)`.
 
-builtins.diagnostics_buffer({buffer})		*artio-diagnostics-buffer*
+builtins.diagnostics_buffer({buffer})               *artio-diagnostics-buffer*
 
   list all diagnostics for the given buffer. uses diagnostics from
   |vim.diagnostic.get()|. uses the current buffer if no buffer is specified.
 
   Plug: `<Plug>(artio-diagnostics-buffer)`.
 
-builtins.keymaps()					*artio-keymaps*
+builtins.keymaps()                                             *artio-keymaps*
 
   list all keymaps. uses formatted data from |nvim_get_keymap()|.
 
