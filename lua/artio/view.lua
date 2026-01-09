@@ -320,7 +320,7 @@ function View:open()
   -- start insert *before* registering events
   self:updatecursor()
   vim._with({ noautocmd = true }, function()
-    vim.cmd.startinsert()
+    vim.cmd.startinsert({ bang = true })
   end)
 
   -- trigger after registering events
