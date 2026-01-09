@@ -139,7 +139,7 @@ end
 ---@param level integer
 ---@param hl_id integer
 function View:show(content, pos, firstc, prompt, indent, level, hl_id)
-  cmdline.level, cmdline.indent, cmdline.prompt = level, indent, cmdline.prompt or #prompt > 0
+  cmdline.level, cmdline.indent = level, indent
   if cmdline.highlighter and cmdline.highlighter.active then
     cmdline.highlighter.active[ext.bufs.cmd] = nil
   end
@@ -250,8 +250,6 @@ function View:open()
 
   ext.check_targets()
 
-  self.prev_show = cmdline.cmdline_show
-
   vim.schedule(function()
     self.augroup = vim.api.nvim_create_augroup("artio:group", { clear = true })
 
@@ -303,12 +301,10 @@ function View:open()
     })
   end)
 
-  cmdline.cmdline_show = function(...)
-    return self:show(...)
-  end
-
+  cmdline.prompt = false
+  cmdline.srow = 0
   cmdline.indent = 1
-  cmdline.level = 0
+  cmdline.level = 1
 
   self:saveview()
 
@@ -339,7 +335,6 @@ function View:close()
   if self.closed then
     return
   end
-  cmdline.cmdline_show = self.prev_show
   self:closepreview()
   vim.schedule(function()
     pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
@@ -399,15 +394,7 @@ end
 
 function View:trigger_show()
   logdebug("trigger_show")
-  cmdline.cmdline_show(
-    { { 0, self.picker.input } },
-    -1,
-    "",
-    self.picker.prompttext,
-    cmdline.indent,
-    cmdline.level,
-    prompt_hl_id
-  )
+  self:show({ { 0, self.picker.input } }, -1, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
 end
 
 ---@param force? boolean
@@ -469,9 +456,11 @@ function View:updatecursor(pos)
   end)
 end
 
+local srow = 0
+
 function View:clear()
-  cmdline.srow = self.picker.opts.bottom and 0 or 1
-  cmdline.erow = cmdline.srow
+  srow = self.picker.opts.bottom and 0 or 1
+  cmdline.erow = srow
   self:setlines(0, -1, {})
 end
 
@@ -618,15 +607,15 @@ function View:showmatches()
       lines[#lines + 1] = ""
     end
   end
-  self:setlines(cmdline.srow, cmdline.erow, lines)
-  cmdline.erow = cmdline.srow + #lines
+  self:setlines(srow, cmdline.erow, lines)
+  cmdline.erow = srow + #lines
 
   for i = 1, #lines do
     local has_icon = icons[i] and icons[i][1] and true
     local icon_indent = has_icon and (#icons[i][1] + icon_pad) or 0
 
     if has_icon and icons[i][2] then
-      self:mark(nil, cmdline.srow + i - 1, indent, {
+      self:mark(nil, srow + i - 1, indent, {
         end_col = indent + icon_indent,
         hl_group = icons[i][2],
         priority = ext_priority.icon,
@@ -637,7 +626,7 @@ function View:showmatches()
     if line_hls then
       for j = 1, #line_hls do
         local hl = line_hls[j]
-        self:mark(nil, cmdline.srow + i - 1, indent + icon_indent + hl[1][1], {
+        self:mark(nil, srow + i - 1, indent + icon_indent + hl[1][1], {
           end_col = indent + icon_indent + hl[1][2],
           hl_group = hl[2],
           priority = ext_priority.hl,
@@ -646,7 +635,7 @@ function View:showmatches()
     end
 
     if marks[i] then
-      self:mark(nil, cmdline.srow + i - 1, indent - 1, {
+      self:mark(nil, srow + i - 1, indent - 1, {
         virt_text = { { self.picker.opts.marker, "ArtioMarker" } },
         virt_text_pos = "overlay",
         priority = ext_priority.marker,
@@ -656,7 +645,7 @@ function View:showmatches()
     if hls[i] then
       for j = 1, #hls[i] do
         local col = indent + icon_indent + hls[i][j]
-        self:mark(nil, cmdline.srow + i - 1, col, {
+        self:mark(nil, srow + i - 1, col, {
           hl_group = "ArtioMatch",
           end_col = col + 1,
           priority = ext_priority.match,
@@ -676,7 +665,7 @@ function View:hlselect()
   end
 
   self:updateoffset()
-  local row = math.max(0, math.min(cmdline.srow + (idx - offset), cmdline.erow) - 1)
+  local row = math.max(0, math.min(srow + (idx - offset), cmdline.erow) - 1)
 
   self:mark("hlselect", row, 0, {
     virt_text = { { self.picker.opts.pointer, "ArtioPointer" } },
