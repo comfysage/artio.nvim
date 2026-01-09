@@ -135,12 +135,113 @@ Example ~
 
 API							*artio-api*
 
-artio.resume()						*artio-resume*
+artio.pick({opts})					*artio.pick()*
+
+  create a new picker |artio.Picker| and start it.
+
+  >lua
+    artio.pick({
+      items = { 'a', 'b', 'c' },
+      fn = artio.sorter,
+    })
+  <
+
+artio.generic({items}, {props})				*artio.generic()*
+
+  creates a generic picker from the given items and props.
+  uses the default |artio.sorter| function.
+
+							*artio.select()*
+artio.select({items}, {opts}, {on_choice}, {start_opts?})
+
+  the |vim.ui.select| interface implemented for artio.
+  adds an optional `{start_opts?}` argument that accepts artio specific
+  options.
+
+artio.resume()						*artio.resume()*
 
   resume the last closed picker. does not work across neovim
   restarts/sessions.
 
   Plug: `<Plug>(artio-resume)`.
+
+API-PICKER						*artio-api-picker*
+
+*artio.Picker*
+  a picker is a special table that holds the state of the picker.
+  the current active picker is stored in
+  `require('artio.picker').active_picker`.
+
+  Fields: ~
+    - {items}           (`artio.Picker.item[]|string[]`)
+                        array of |artio.Picker.item| or strings. an array of
+                        strings will be converted to items.
+    - {fn}              (`artio.Picker.sorter`)
+                        an instance of |artio.Picker.sorter|.
+    - {on_close}        (`fun(text: string, idx: integer)`)
+                        callback function for when the picker closes (after
+                        accepting a match). gets the `item.text` field as the
+                        first argument and the item id as the second.
+    - {get_items}?      (`fun(input: string): artio.Picker.item[]`)
+    - {format_item}?    (`fun(item: any): string`)
+    - {preview_item}?   (`fun(item: any): integer, fun(win: integer)`)
+    - {get_icon}?       (`fun(item: artio.Picker.item): string, string`)
+    - {hl_item}?        (`fun(item: artio.Picker.item): artio.Picker.hl[]`)
+    - {on_quit}?        (`fun()`)
+                        callback function for when the picker closes before
+                        choosing a match.
+    - {prompt}?         (`string`)
+                        text before prompt prefix. can be disabled with
+                        `config.opts.prompt_title = false`.
+    - {defaulttext}?    (`string`)
+                        start input for picker.
+    - {prompttext}?     (`string`)
+                        defaults to prompt title combined with prompt prefix.
+    - {opts}?           (`artio.config.opts`)
+                        picker options combined with the user config.
+    - {win}?            (`artio.config.win`)
+                        picker window options combined with the user config.
+    - {actions}?        (`table<string, artio.Picker.action>`)
+                        picker specific actions.
+    - {mappings}?       (`table<string, string>`)
+                        mappings from the user config.
+
+API-SORTER						*artio-api-sorter*
+
+*artio.Picker.sorter*
+   a function that takes an array of |artio.Picker.item| and an input string
+   and returns a table of matches |artio.Picker.matches|.
+
+*artio.Picker.matches*
+  a table where each key is the id of the item and each value is of
+  |artio.Picker.match|.
+
+*artio.Picker.match*
+
+  Fields: ~
+    - {1}       (`integer`)
+                id of the item
+    - {2}       (`any`)
+                array of ' matching ' hls. these correspond to chars of the
+                `item.text` field. this is based on the output of
+                |matchfuzzypos|.
+    - {3}       (`integer`)
+                the score of the match.
+
+*artio.Picker.item*
+
+  Fields: ~
+    - {id}      (`integer`)
+    - {v}       (`any`)
+    - {text}    (`string`)
+
+artio.sorter({items}, {input})				*artio.sorter()*
+
+  the default sorter provides support for pattern matching. a `/.../` match at
+  the start of the input will limit the fuzzy sorter to items matching the
+  pattern. if you want to use `/.../` in your fuzzy matches, make sure to
+  escape it by starting the input with an empty space (` /.../`). fuzzy
+  sorting will be done on the input with the pattern removed.
 
 API-BUILTINS
 
