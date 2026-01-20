@@ -46,8 +46,9 @@ vim.api.nvim_create_user_command("Artio", function(opts)
   builtin()
 end, {
   nargs = "?",
-  complete = function(_, _, _)
-    return vim.tbl_keys(require("artio.builtins"))
+  complete = function(argLead)
+    local builtins = vim.tbl_keys(require("artio.builtins"))
+    return vim.fn.matchfuzzy(builtins, argLead)
   end,
 })
 
