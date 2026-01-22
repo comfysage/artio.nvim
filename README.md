@@ -32,7 +32,7 @@ require("vim._extui").enable({ enable = true, msg = {
 `vim.pack`
 
 ```lua
-vim.pack.add({{ src = "https://github.com/comfysage/artio.nvim" }})
+vim.pack.add({{ src = "https://codeberg.org/comfysage/artio.nvim" }})
 ```
 
 `lazy.nvim`
