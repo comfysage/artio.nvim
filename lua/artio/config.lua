@@ -13,6 +13,7 @@
 ---@field prompt_title boolean
 ---@field pointer string
 ---@field marker string
+---@field infolist ('index'|'list')[]
 ---@field use_icons boolean
 
 ---@class artio.config.win
@@ -34,6 +35,7 @@ M.default = {
     prompt_title = true,
     pointer = "",
     marker = "│",
+    infolist = { "list" }, -- index: [1] list: (4/5)
     use_icons = _G["MiniIcons"] and true or false,
   },
   win = {

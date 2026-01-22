@@ -525,6 +525,18 @@ function View:mark(id, line, col, opts)
   return result
 end
 
+---@param p artio.Picker
+---@param info 'index'|'list'|string
+---@return string
+local function getpromptinfo(p, info)
+  if info == "index" then
+    return ("[%d]"):format(p.idx)
+  elseif info == "list" then
+    return ("(%d/%d)"):format(#p.matches, #p.items)
+  end
+  return ""
+end
+
 function View:drawprompt()
   logdebug("drawprompt")
 
@@ -534,7 +546,15 @@ function View:drawprompt()
     self:mark("promptinfo", promptidx, 0, {
       virt_text = {
         {
-          ("[%d] (%d/%d)"):format(self.picker.idx, #self.picker.matches, #self.picker.items),
+          table.concat(
+            vim
+              .iter(self.picker.opts.infolist)
+              :map(function(info)
+                return getpromptinfo(self.picker, info)
+              end)
+              :totable(),
+            " "
+          ),
           "InfoText",
         },
       },
