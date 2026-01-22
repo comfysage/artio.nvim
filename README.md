@@ -88,3 +88,16 @@ vim.keymap.set("n", "<leader>fb", "<Plug>(artio-buffers)")
 vim.keymap.set("n", "<leader>f/", "<Plug>(artio-buffergrep)")
 vim.keymap.set("n", "<leader>fo", "<Plug>(artio-oldfiles)")
 ```
+
+### customize builtin pickers
+
+you're able to override the command used to find files:
+
+```lua
+-- ignore hidden files
+vim.keymap.set("n", "<leader>ff", function()
+    require('artio.builtins').files({
+        findprg = [[ find . -type f -iregex '.*$*.*' -not -path '*/[@.]*' ]],
+    })
+end)
+```
