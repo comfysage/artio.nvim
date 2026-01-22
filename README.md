@@ -54,6 +54,7 @@ require("artio").setup({
     promptprefix = "", -- prefix for the prompt
     prompt_title = true, -- whether to draw the prompt title
     pointer = "", -- pointer for the selected match
+    marker = "│", -- prefix for marked items
     use_icons = true, -- requires mini.icons
   },
   win = {
