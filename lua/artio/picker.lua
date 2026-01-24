@@ -17,6 +17,7 @@ local View = require("artio.view")
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
 ---@field on_quit? fun()
+---@field live? boolean
 ---@field prompt? string
 ---@field defaulttext? string
 ---@field prompttext? string
@@ -28,9 +29,11 @@ local View = require("artio.view")
 ---@class artio.Picker : artio.Picker.config
 ---@field co thread|nil
 ---@field input string
+---@field liveinput? string
 ---@field idx integer 1-indexed
 ---@field matches artio.Picker.match[]
 ---@field marked table<integer, true|nil>
+---@field live boolean
 local Picker = {}
 Picker.__index = Picker
 Picker.active_picker = nil
@@ -45,6 +48,7 @@ function Picker:new(props)
     closed = false,
     prompt = "",
     input = nil,
+    liveinput = nil,
     idx = 0,
     items = {},
     matches = {},
@@ -55,7 +59,15 @@ function Picker:new(props)
     t.prompttext = t.opts.prompt_title and ("%s %s"):format(t.prompt, t.opts.promptprefix) or t.opts.promptprefix
   end
 
-  t.input = t.defaulttext or ""
+  t.live = vim.F.if_nil(t.live, t.get_items ~= nil)
+
+  if t.live then
+    t.input = ""
+    t.liveinput = t.defaulttext or ""
+  else
+    t.input = t.defaulttext or ""
+    t.liveinput = ""
+  end
 
   Picker.getitems(t, "")
 
@@ -204,7 +216,10 @@ local function item_is_structured(item)
 end
 
 function Picker:getitems(input)
-  self.items = self.get_items and self.get_items(input) or self.items
+  if self.live then
+    self.items = self.get_items and self.get_items(input) or self.items
+  end
+
   if #self.items > 0 and not item_is_structured(self.items[1]) then
     self.items = vim
       .iter(ipairs(self.items))
@@ -226,12 +241,31 @@ end
 
 ---@param input? string
 function Picker:getmatches(input)
-  input = input or self.input
+  if not input then
+    input = self.live and self.liveinput or self.input
+  end
   self:getitems(input)
+
+  -- if live, ignore sorting
+  if self.live then
+    self.matches = self:getallmatches()
+    return
+  end
+
   self.matches = vim.tbl_values(self.fn(self.items, input))
   table.sort(self.matches, function(a, b)
     return a[3] > b[3]
   end)
+end
+
+---@return artio.Picker.match[]
+function Picker:getallmatches()
+  return vim
+    .iter(ipairs(self.items))
+    :map(function(_, v)
+      return { v.id, {}, 0 }
+    end)
+    :totable()
 end
 
 ---@param idx integer
@@ -262,6 +296,19 @@ function Picker:getcurrent(idx)
   end
 
   return self.items[idx]
+end
+
+function Picker:togglelive()
+  -- check if live can be toggled
+  if not self.get_items then
+    return
+  end
+
+  -- reset fuzzy search when enabling live search
+  if not self.live then
+    self.input = ""
+  end
+  self.live = not self.live
 end
 
 return Picker

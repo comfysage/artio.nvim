@@ -394,7 +394,13 @@ end
 
 function View:trigger_show()
   logdebug("trigger_show")
-  self:show({ { 0, self.picker.input } }, -1, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
+  local input
+  if self.picker.live then
+    input = self.picker.liveinput
+  else
+    input = self.picker.input
+  end
+  self:show({ { 0, input } }, -1, "", self.picker.prompttext, cmdline.indent, cmdline.level, prompt_hl_id)
 end
 
 ---@param force? boolean
@@ -409,7 +415,11 @@ function View:update(force)
   local text = vim.api.nvim_get_current_line()
   text = text:sub(promptlen + 1)
 
-  self.picker.input = text
+  if self.picker.live then
+    self.picker.liveinput = text
+  else
+    self.picker.input = text
+  end
 
   vim.schedule(coroutine.wrap(function()
     logdebug("getmatches")
