@@ -159,3 +159,11 @@ vim.keymap.set(
     self.view:togglepreview()
   end)
 )
+vim.keymap.set(
+  "i",
+  "<Plug>(artio-action-togglelive)",
+  wrap(function(self)
+    self:togglelive()
+    self.view:trigger_show() -- update input
+  end)
+)
