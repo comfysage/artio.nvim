@@ -119,7 +119,9 @@ function View:setprompttext(content, prompt)
 
   self:promptpos()
   self:setlines(promptidx, promptidx + 1, lines)
-  vim.fn.prompt_setprompt(ui2.bufs.cmd, promptstr)
+  if vim.fn.prompt_getprompt(ui2.bufs.cmd) ~= promptstr then
+    vim.fn.prompt_setprompt(ui2.bufs.cmd, promptstr)
+  end
   vim.schedule(function()
     local ok, result = pcall(vim.api.nvim_buf_set_mark, ui2.bufs.cmd, ":", promptidx + 1, promptlen, {})
     if not ok then
