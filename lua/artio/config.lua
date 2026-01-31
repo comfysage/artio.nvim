@@ -74,7 +74,7 @@ local function tmerge(tdefault, toverride)
     return tdefault
   end
 
-  if tdefault == vim.NIL or vim.islist(tdefault) then
+  if vim.islist(tdefault) then
     return toverride
   end
   if vim.tbl_isempty(tdefault) then
@@ -82,6 +82,11 @@ local function tmerge(tdefault, toverride)
   end
 
   return vim.iter(pairs(tdefault)):fold({}, function(tnew, k, v)
+    if v == vim.NIL and toverride[k] ~= nil then
+      tnew[k] = toverride[k]
+      return tnew
+    end
+
     if toverride[k] == nil or type(v) ~= type(toverride[k]) then
       tnew[k] = v
       return tnew
