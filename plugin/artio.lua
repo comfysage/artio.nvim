@@ -97,6 +97,9 @@ end)
 vim.keymap.set("n", "<Plug>(artio-diagnostics-buffer)", function()
   return require("artio.builtins").diagnostics_buffer()
 end)
+vim.keymap.set("n", "<Plug>(artio-keymaps)", function()
+  return require("artio.builtins").keymaps()
+end)
 
 -- == actions ==
 
