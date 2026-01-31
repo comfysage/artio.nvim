@@ -41,7 +41,8 @@ M.default = {
   win = {
     height = 0.4,
     hidestatusline = false, -- works best with laststatus=3
-    preview_opts = nil,
+    ---@diagnostic disable-next-line: assign-type-mismatch
+    preview_opts = vim.NIL,
   },
   mappings = {
     ["<down>"] = "down",
