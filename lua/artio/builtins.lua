@@ -144,20 +144,7 @@ builtins.grep = function(props)
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
-    hl_item = function(item)
-      local name_end = string.find(item.text, ":") - 1
-      local lnum_end = string.find(item.text, ":", name_end + 2) - 1
-      local col_end = string.find(item.text, ":", lnum_end + 2) - 1
-
-      return {
-        { { 0, name_end }, "Title" },
-        { { name_end, name_end + 1 }, "NonText" },
-        { { name_end + 1, lnum_end }, "Number" },
-        { { lnum_end, lnum_end + 1 }, "NonText" },
-        { { lnum_end + 1, col_end }, "Number" },
-        { { col_end, col_end + 1 }, "NonText" },
-      }
-    end,
+    hl_item = utils.hl_qfitem,
     actions = extend(
       {},
       utils.make_setqflistactions(function(item)
@@ -606,6 +593,53 @@ builtins.keymaps = function(props)
           vim.print(out)
         end)
       end,
+    }, props)
+  )
+end
+
+builtins.quickfix = function(props)
+  props = props or {}
+
+  local qfid = vim.fn.getqflist({ id = 0 }).id
+  local qflist = vim.fn.getqflist({ id = qfid, items = 0 }).items
+
+  return artio.generic(
+    vim
+      .iter(ipairs(qflist))
+      :map(function(_, item)
+        item.name = vim.fn.bufname(item.bufnr)
+        return item
+      end)
+      :totable(),
+    extend({
+      prompt = "quickfix",
+      on_close = function(_, idx)
+        artio.schedule(function()
+          vim.cmd([[copen]])
+          local win = vim.fn.getqflist({ id = qfid, winid = 0 }).winid
+          vim.api.nvim_win_set_cursor(win, { idx, 0 })
+        end)
+      end,
+      format_item = function(item)
+        return string.format("%s:%d:%d:%s", item.name, item.lnum, item.col, item.text)
+      end,
+      preview_item = function(item)
+        return item.bufnr,
+          function(w)
+            vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
+            vim.api.nvim_win_set_cursor(w, { item.lnum, item.col })
+          end
+      end,
+      get_icon = config.get().opts.use_icons and function(item)
+        return require("mini.icons").get("file", item.v.name)
+      end or nil,
+      hl_item = utils.hl_qfitem,
+      actions = extend(
+        {},
+        utils.make_setqflistactions(function(item)
+          return item.v
+        end)
+      ),
     }, props)
   )
 end

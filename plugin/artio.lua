@@ -100,6 +100,9 @@ end)
 vim.keymap.set("n", "<Plug>(artio-keymaps)", function()
   return require("artio.builtins").keymaps()
 end)
+vim.keymap.set("n", "<Plug>(artio-quickfix)", function()
+  return require("artio.builtins").quickfix()
+end)
 
 -- == actions ==
 
