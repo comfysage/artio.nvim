@@ -335,7 +335,7 @@ builtins.keymaps()                                             *artio-keymaps*
 
   Plug: `<Plug>(artio-keymaps)`.
 
-builtins.quickfix()                                            *artio-keymaps*
+builtins.quickfix()                                           *artio-quickfix*
 
   show current quickfix list. allows previewing items and updating the list.
 
