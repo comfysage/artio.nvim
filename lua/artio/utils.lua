@@ -126,4 +126,19 @@ function utils.make_fileactions(fn)
   }
 end
 
+function utils.hl_qfitem(item)
+  local name_end = string.find(item.text, ":") - 1
+  local lnum_end = string.find(item.text, ":", name_end + 2) - 1
+  local col_end = string.find(item.text, ":", lnum_end + 2) - 1
+
+  return {
+    { { 0, name_end }, "Title" },
+    { { name_end, name_end + 1 }, "NonText" },
+    { { name_end + 1, lnum_end }, "Number" },
+    { { lnum_end, lnum_end + 1 }, "NonText" },
+    { { lnum_end + 1, col_end }, "Number" },
+    { { col_end, col_end + 1 }, "NonText" },
+  }
+end
+
 return utils
