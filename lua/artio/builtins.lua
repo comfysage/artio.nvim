@@ -338,28 +338,38 @@ builtins.smart = function(props)
     cwd = base_dir,
   })()
 
-  local pwd = vim.fn.getcwd()
   local recentlst = vim
     .iter(find_buffers())
     :map(function(buf)
       local v = vim.api.nvim_buf_get_name(buf)
-      return vim.fs.relpath(pwd, v) or v
+      return vim.fs.abspath(v)
     end)
     :totable()
 
+  local items = vim.list.unique(vim.iter({ lst, recentlst }):flatten(1):totable())
+
   return artio.pick(extend({
     prompt = "smart",
-    items = vim.tbl_keys(vim.iter({ lst, recentlst }):fold({}, function(items, l)
-      for i = 1, #l do
-        items[l[i]] = true
+    items = items,
+    fn = artio.mergesorters("base", function(l, input)
+      if #input == 0 then
+        return vim
+          .iter(l)
+          :map(function(v)
+            if not vim.tbl_contains(recentlst, v.v) then
+              return
+            end
+            return { v.id, {}, 0 }
+          end)
+          :totable()
       end
-      return items
-    end)),
-    fn = artio.mergesorters("base", artio.sorter, function(l, _)
+
+      return artio.sorter(l, input)
+    end, function(l, _)
       return vim
         .iter(l)
         :map(function(v)
-          if not vim.tbl_contains(recentlst, v.text) then
+          if not vim.tbl_contains(recentlst, v.v) then
             return
           end
           return { v.id, {}, 100 }
@@ -369,7 +379,7 @@ builtins.smart = function(props)
       return vim
         .iter(l)
         :map(function(v)
-          return { v.id, {}, matchproximity(currentfile, v.text) }
+          return { v.id, {}, matchproximity(currentfile, v.v) }
         end)
         :totable()
     end),
