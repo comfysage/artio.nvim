@@ -121,7 +121,7 @@ function View:setprompttext(content, prompt)
   self:setlines(promptidx, promptidx + 1, lines)
   vim.fn.prompt_setprompt(ext.bufs.cmd, promptstr)
   vim.schedule(function()
-    local ok, result = pcall(vim.api.nvim_buf_set_mark, ext.bufs.cmd, ":", promptidx + 1, 0, {})
+    local ok, result = pcall(vim.api.nvim_buf_set_mark, ext.bufs.cmd, ":", promptidx + 1, promptlen, {})
     if not ok then
       logerror(("Failed to set mark %d:%d\n\t%s"):format(promptidx, promptlen, result))
       return
