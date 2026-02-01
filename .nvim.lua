@@ -5,6 +5,8 @@ end
 
 vim.cmd([[ set rtp^=. ]])
 
+require('vim._extui').enable({})
+
 vim.api.nvim_create_autocmd("UIEnter", {
   callback = function()
     R("artio").setup()
