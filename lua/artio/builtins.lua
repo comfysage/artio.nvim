@@ -90,7 +90,7 @@ builtins.grep = function(props)
   props.grepprg = props.grepprg or vim.o.grepprg
 
   local base_dir = vim.fn.getcwd(0)
-  local ext = require("vim._extui.shared")
+  local ui2 = require("vim._core.ui2")
   local grepcmd = utils.make_cmd(props.grepprg, {
     cwd = base_dir,
   })
@@ -105,7 +105,7 @@ builtins.grep = function(props)
 
       local lines = grepcmd(input)
 
-      vim.fn.setloclist(ext.wins.cmd, {}, " ", {
+      vim.fn.setloclist(ui2.wins.cmd, {}, " ", {
         title = "grep[" .. input .. "]",
         lines = lines,
         efm = vim.o.grepformat,
@@ -113,7 +113,7 @@ builtins.grep = function(props)
       })
 
       return vim
-        .iter(ipairs(vim.fn.getloclist(ext.wins.cmd)))
+        .iter(ipairs(vim.fn.getloclist(ui2.wins.cmd)))
         :map(function(i, locitem)
           local name = vim.fs.abspath(vim.fn.bufname(locitem.bufnr))
           return {

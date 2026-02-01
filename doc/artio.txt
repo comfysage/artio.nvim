@@ -1,5 +1,4 @@
-*artio.txt*	a minimal, nature-infused file picker for neovim using the new
-		extui window
+*artio.txt*	a minimal, nature-infused file picker for neovim using ui2
 
 ==============================================================================
 
@@ -7,21 +6,21 @@ FEATURES                                                      *artio-features*
 
 Requires Neovim `>= 0.12`
 
-- Lightweight picker window built on Neovim's extui
+- Lightweight picker window built on Neovim's ui2
 - Prompt + list UI components - minimal and focused
 - Fuzzy filtering using matchfuzzy (built-in)
 - Optional icon support for common filetypes through mini.icons
   (https://github.com/echasnovski/mini.nvim)
 - No heavy dependencies - pure Lua
 
-EXTUI
+UI2
 
-artio requires the extui to be enabled.
+artio requires ui2 to be enabled.
 
 an example of how to set this up is:
 
 >lua
-  require("vim._extui").enable({ enable = true, msg = {
+  require("vim._core.ui2").enable({ enable = true, msg = {
     target = "msg",
   } })
 <

@@ -169,10 +169,10 @@ function Picker:free()
 end
 
 function Picker:initkeymaps()
-  local ext = require("vim._extui.shared")
+  local ui2 = require("vim._core.ui2")
 
   ---@type vim.keymap.set.Opts
-  local opts = { buffer = ext.bufs.cmd }
+  local opts = { buffer = ui2.bufs.cmd }
 
   if self.actions then
     vim.iter(pairs(self.actions)):each(function(k, v)
@@ -187,13 +187,13 @@ function Picker:initkeymaps()
 end
 
 function Picker:delkeymaps()
-  local ext = require("vim._extui.shared")
+  local ui2 = require("vim._core.ui2")
 
-  local keymaps = vim.api.nvim_buf_get_keymap(ext.bufs.cmd, "i")
+  local keymaps = vim.api.nvim_buf_get_keymap(ui2.bufs.cmd, "i")
 
   vim.iter(ipairs(keymaps)):each(function(_, v)
     if v.lhs:match("^<Plug>(artio-action-") or (v.rhs and v.rhs:match("^<Plug>(artio-action-")) then
-      vim.api.nvim_buf_del_keymap(ext.bufs.cmd, "i", v.lhs)
+      vim.api.nvim_buf_del_keymap(ui2.bufs.cmd, "i", v.lhs)
     end
   end)
 end
