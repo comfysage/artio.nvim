@@ -5,7 +5,7 @@ end
 
 vim.cmd([[ set rtp^=. ]])
 
-require('vim._extui').enable({})
+require("vim._core.ui2").enable({})
 
 vim.api.nvim_create_autocmd("UIEnter", {
   callback = function()

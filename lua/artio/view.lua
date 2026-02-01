@@ -1,5 +1,5 @@
-local cmdline = require("vim._extui.cmdline")
-local ext = require("vim._extui.shared")
+local cmdline = require("vim._core.ui2.cmdline")
+local ui2 = require("vim._core.ui2")
 
 local _log = {}
 local _loglevel = vim.log.levels.ERROR
@@ -38,7 +38,7 @@ local prompt_hl_id = vim.api.nvim_get_hl_id_by_name("ArtioPrompt")
 ---@param hide boolean Whether to hide or show the window.
 ---@param height integer (Text)height of the cmdline window.
 local function win_config(win, hide, height)
-  if ext.cmdheight == 0 and vim.api.nvim_win_get_config(win).hide ~= hide then
+  if ui2.cmdheight == 0 and vim.api.nvim_win_get_config(win).hide ~= hide then
     vim.api.nvim_win_set_config(win, { hide = hide, height = not hide and height or nil })
   elseif vim.api.nvim_win_get_height(win) ~= height then
     vim.api.nvim_win_set_height(win, height)
@@ -49,7 +49,7 @@ local function win_config(win, hide, height)
     vim._with({ noautocmd = true, o = { splitkeep = "screen" } }, function()
       vim.o.cmdheight = height
     end)
-    ext.msg.set_pos()
+    ui2.msg.set_pos()
   end
 end
 
@@ -92,7 +92,7 @@ local before_draw_tick = 0
 --- gets updated after changedtick event
 local last_draw_tick = 0
 local function get_changedtick()
-  return vim.api.nvim_buf_get_changedtick(ext.bufs.cmd)
+  return vim.api.nvim_buf_get_changedtick(ui2.bufs.cmd)
 end
 
 local cmdbuff = "" ---@type string Stored cmdline used to calculate translation offset.
@@ -119,9 +119,9 @@ function View:setprompttext(content, prompt)
 
   self:promptpos()
   self:setlines(promptidx, promptidx + 1, lines)
-  vim.fn.prompt_setprompt(ext.bufs.cmd, promptstr)
+  vim.fn.prompt_setprompt(ui2.bufs.cmd, promptstr)
   vim.schedule(function()
-    local ok, result = pcall(vim.api.nvim_buf_set_mark, ext.bufs.cmd, ":", promptidx + 1, promptlen, {})
+    local ok, result = pcall(vim.api.nvim_buf_set_mark, ui2.bufs.cmd, ":", promptidx + 1, promptlen, {})
     if not ok then
       logerror(("Failed to set mark %d:%d\n\t%s"):format(promptidx, promptlen, result))
       return
@@ -141,12 +141,12 @@ end
 function View:show(content, pos, firstc, prompt, indent, level, hl_id)
   cmdline.level, cmdline.indent = level, indent
   if cmdline.highlighter and cmdline.highlighter.active then
-    cmdline.highlighter.active[ext.bufs.cmd] = nil
+    cmdline.highlighter.active[ui2.bufs.cmd] = nil
   end
-  if ext.msg.cmd.msg_row ~= -1 then
-    ext.msg.msg_clear()
+  if ui2.msg.cmd.msg_row ~= -1 then
+    ui2.msg.msg_clear()
   end
-  ext.msg.virt.last = { {}, {}, {}, {} }
+  ui2.msg.virt.last = { {}, {}, {}, {} }
 
   self:clear()
   prompthl_id = hl_id
@@ -169,9 +169,9 @@ end
 
 ---@param predicted? integer The predicted height of the cmdline window
 function View:updatewinheight(predicted)
-  local height = math.max(1, predicted or vim.api.nvim_win_text_height(ext.wins.cmd, {}).all)
+  local height = math.max(1, predicted or vim.api.nvim_win_text_height(ui2.wins.cmd, {}).all)
   height = math.min(height, self.win.height)
-  win_config(ext.wins.cmd, false, height)
+  win_config(ui2.wins.cmd, false, height)
 end
 
 function View:saveview()
@@ -211,8 +211,8 @@ function View:setopts(restore)
     self.opts[level] = self.opts[level] or {}
     local props = {
       scope = level == "g" and "global" or "local",
-      buf = level == "buf" and ext.bufs.cmd or nil,
-      win = level == "win" and ext.wins.cmd or nil,
+      buf = level == "buf" and ui2.bufs.cmd or nil,
+      win = level == "win" and ui2.wins.cmd or nil,
     }
 
     for name, value in pairs(o) do
@@ -248,7 +248,7 @@ function View:open()
   _log = nil
   _log = {}
 
-  ext.check_targets()
+  ui2.check_targets()
 
   vim.schedule(function()
     self.augroup = vim.api.nvim_create_augroup("artio:group", { clear = true })
@@ -286,7 +286,7 @@ function View:open()
 
     vim.api.nvim_create_autocmd("TextChangedI", {
       group = self.augroup,
-      buffer = ext.bufs.cmd,
+      buffer = ui2.bufs.cmd,
       callback = function()
         self:update()
       end,
@@ -294,7 +294,7 @@ function View:open()
 
     vim.api.nvim_create_autocmd("CursorMovedI", {
       group = self.augroup,
-      buffer = ext.bufs.cmd,
+      buffer = ui2.bufs.cmd,
       callback = function()
         self:updatecursor()
       end,
@@ -312,7 +312,7 @@ function View:open()
   self:trigger_show()
 
   vim._with({ noautocmd = true }, function()
-    vim.api.nvim_set_current_win(ext.wins.cmd)
+    vim.api.nvim_set_current_win(ui2.wins.cmd)
   end)
 
   self:setopts()
@@ -325,7 +325,7 @@ function View:open()
 
   -- trigger after registering events
   vim.schedule(function()
-    vim._with({ win = ext.wins.cmd, wo = { eventignorewin = "" } }, function()
+    vim._with({ win = ui2.wins.cmd, wo = { eventignorewin = "" } }, function()
       vim.api.nvim_exec_autocmds("WinEnter", {})
     end)
   end)
@@ -338,7 +338,7 @@ function View:close()
   self:closepreview()
   vim.schedule(function()
     pcall(vim.api.nvim_del_augroup_by_id, self.augroup)
-    pcall(vim.api.nvim_buf_detach, ext.bufs.cmd)
+    pcall(vim.api.nvim_buf_detach, ui2.bufs.cmd)
 
     vim.cmd.stopinsert()
 
@@ -364,19 +364,19 @@ function View:close()
 end
 
 function View:hide()
-  vim.fn.clearmatches(ext.wins.cmd) -- Clear matchparen highlights.
-  vim.api.nvim_win_set_cursor(ext.wins.cmd, { 1, 0 })
-  vim.api.nvim_buf_set_lines(ext.bufs.cmd, 0, -1, false, {})
+  vim.fn.clearmatches(ui2.wins.cmd) -- Clear matchparen highlights.
+  vim.api.nvim_win_set_cursor(ui2.wins.cmd, { 1, 0 })
+  vim.api.nvim_buf_set_lines(ui2.bufs.cmd, 0, -1, false, {})
 
   local clear = vim.schedule_wrap(function(was_prompt)
     -- Avoid clearing prompt window when it is re-entered before the next event
     -- loop iteration. E.g. when a non-choice confirm button is pressed.
     if was_prompt and not cmdline.prompt then
       pcall(function()
-        vim.api.nvim_buf_set_lines(ext.bufs.cmd, 0, -1, false, {})
-        vim.api.nvim_buf_set_lines(ext.bufs.dialog, 0, -1, false, {})
-        vim.api.nvim_win_set_config(ext.wins.dialog, { hide = true })
-        vim.on_key(nil, ext.msg.dialog_on_key)
+        vim.api.nvim_buf_set_lines(ui2.bufs.cmd, 0, -1, false, {})
+        vim.api.nvim_buf_set_lines(ui2.bufs.dialog, 0, -1, false, {})
+        vim.api.nvim_win_set_config(ui2.wins.dialog, { hide = true })
+        vim.on_key(nil, ui2.msg.dialog_on_key)
       end)
     end
     -- Messages emitted as a result of a typed command are treated specially:
@@ -389,7 +389,7 @@ function View:hide()
   clear(cmdline.prompt)
 
   cmdline.prompt, cmdline.level = false, 0
-  win_config(ext.wins.cmd, true, ext.cmdheight)
+  win_config(ui2.wins.cmd, true, ui2.cmdheight)
 end
 
 function View:trigger_show()
@@ -441,7 +441,7 @@ function View:updatecursor(pos)
   self:promptpos()
 
   if not pos or pos < 0 then
-    local cursorpos = vim.api.nvim_win_get_cursor(ext.wins.cmd)
+    local cursorpos = vim.api.nvim_win_get_cursor(ui2.wins.cmd)
     pos = cursorpos[2] - promptlen
   end
 
@@ -459,7 +459,7 @@ function View:updatecursor(pos)
   curpos[1], curpos[2] = promptidx + 1, promptlen + pos
 
   vim._with({ noautocmd = true }, function()
-    local ok, _ = pcall(vim.api.nvim_win_set_cursor, ext.wins.cmd, curpos)
+    local ok, _ = pcall(vim.api.nvim_win_set_cursor, ui2.wins.cmd, curpos)
     if not ok then
       logerror(("Failed to set cursor %d:%d"):format(curpos[1], curpos[2]))
     end
@@ -482,13 +482,13 @@ function View:setlines(posstart, posend, lines)
   -- update winheight to prevent wrong scroll when increasing from 1
   local diff = #lines - (posend - posstart)
   if diff ~= 0 then
-    local height = vim.api.nvim_win_text_height(ext.wins.cmd, {}).all
+    local height = vim.api.nvim_win_text_height(ui2.wins.cmd, {}).all
     local predicted = height + diff
     self:updatewinheight(predicted)
   end
 
   before_draw_tick = get_changedtick()
-  vim.api.nvim_buf_set_lines(ext.bufs.cmd, posstart, posend, false, lines)
+  vim.api.nvim_buf_set_lines(ui2.bufs.cmd, posstart, posend, false, lines)
   last_draw_tick = get_changedtick()
 end
 
@@ -511,7 +511,7 @@ local ext_priority = {
 function View:mark(id, line, col, opts)
   if id and self.marks[id] then
     vim._with({ noautocmd = true }, function()
-      vim.api.nvim_buf_del_extmark(ext.bufs.cmd, view_ns, self.marks[id])
+      vim.api.nvim_buf_del_extmark(ui2.bufs.cmd, view_ns, self.marks[id])
     end)
     self.marks[id] = nil
   end
@@ -521,7 +521,7 @@ function View:mark(id, line, col, opts)
 
   local ok, result
   vim._with({ noautocmd = true }, function()
-    ok, result = pcall(vim.api.nvim_buf_set_extmark, ext.bufs.cmd, view_ns, line, col, opts)
+    ok, result = pcall(vim.api.nvim_buf_set_extmark, ui2.bufs.cmd, view_ns, line, col, opts)
   end)
   if not ok then
     logerror(("Failed to add extmark %d:%d\n\t%s"):format(line, col, result))

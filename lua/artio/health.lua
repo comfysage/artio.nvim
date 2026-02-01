@@ -7,8 +7,8 @@ health.check = function()
     vim.health.error("artio.nvim not loaded")
   end
 
-  if not vim.tbl_get(require("vim._extui.shared") or {}, "cfg", "enable") then
-    vim.health.error("extui not enabled")
+  if not vim.tbl_get(require("vim._core.ui2") or {}, "cfg", "enable") then
+    vim.health.error("ui2 not enabled")
   end
 
   if _G["MiniIcons"] then
