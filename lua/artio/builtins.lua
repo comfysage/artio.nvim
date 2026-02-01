@@ -89,9 +89,10 @@ builtins.grep = function(props)
   props = props or {}
   props.grepprg = props.grepprg or vim.o.grepprg
 
+  local base_dir = vim.fn.getcwd(0)
   local ext = require("vim._extui.shared")
   local grepcmd = utils.make_cmd(props.grepprg, {
-    cwd = vim.fn.getcwd(0),
+    cwd = base_dir,
   })
 
   return artio.pick(extend({
@@ -114,10 +115,11 @@ builtins.grep = function(props)
       return vim
         .iter(ipairs(vim.fn.getloclist(ext.wins.cmd)))
         :map(function(i, locitem)
+          local name = vim.fs.abspath(vim.fn.bufname(locitem.bufnr))
           return {
             id = i,
-            v = { vim.fn.bufname(locitem.bufnr), locitem.lnum, locitem.col },
-            text = locitem.text,
+            v = { name, locitem.lnum, locitem.col },
+            text = ("%s:%d:%d:%s"):format(vim.fs.relpath(base_dir, name), locitem.lnum, locitem.col, locitem.text),
           }
         end)
         :totable()
@@ -139,6 +141,20 @@ builtins.grep = function(props)
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
     end or nil,
+    hl_item = function(item)
+      local name_end = string.find(item.text, ":") - 1
+      local lnum_end = string.find(item.text, ":", name_end + 2) - 1
+      local col_end = string.find(item.text, ":", lnum_end + 2) - 1
+
+      return {
+        { { 0, name_end }, "Title" },
+        { { name_end, name_end + 1 }, "NonText" },
+        { { name_end + 1, lnum_end }, "Number" },
+        { { lnum_end, lnum_end + 1 }, "NonText" },
+        { { lnum_end + 1, col_end }, "Number" },
+        { { col_end, col_end + 1 }, "NonText" },
+      }
+    end,
     actions = extend(
       {},
       utils.make_setqflistactions(function(item)
