@@ -272,6 +272,17 @@ builtins.helptags = function(props)
           vim.cmd.help(text)
         end)
       end,
+      preview_item = function(tag)
+        return vim.api.nvim_create_buf(false, true), function(w)
+          local buf = vim.api.nvim_win_get_buf(w)
+          vim.bo[buf].bufhidden = "wipe"
+          vim.bo[buf].buftype = "help"
+
+          vim._with({ buf = buf }, function()
+            vim.cmd.help(tag)
+          end)
+        end
+      end,
     }, props)
   )
 end
