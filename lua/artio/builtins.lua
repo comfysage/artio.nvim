@@ -34,10 +34,13 @@ builtins.builtins = function(props)
   )
 end
 
+---@class artio.picker.generic.fs.Props : artio.Picker.config
+---@field base_dir? string
+
 local findprg = vim.fn.executable("fd") == 1 and "fd -H -p -a -t f --color=never --"
   or "find . -type f -iregex '.*$*.*'"
 
----@class artio.picker.files.Props : artio.Picker.config
+---@class artio.picker.files.Props : artio.picker.generic.fs.Props
 ---@field findprg? string
 
 ---@param props? artio.picker.files.Props
@@ -45,7 +48,7 @@ builtins.files = function(props)
   props = props or {}
   props.findprg = props.findprg or findprg
 
-  local base_dir = vim.fn.getcwd(0)
+  local base_dir = props.base_dir or vim.fn.getcwd(0)
   local lst = utils.make_cmd(props.findprg, {
     cwd = base_dir,
   })()
@@ -81,7 +84,7 @@ builtins.files = function(props)
   )
 end
 
----@class artio.picker.grep.Props : artio.Picker.config
+---@class artio.picker.grep.Props : artio.picker.generic.fs.Props
 ---@field grepprg? string
 
 ---@param props? artio.picker.grep.Props
@@ -89,7 +92,7 @@ builtins.grep = function(props)
   props = props or {}
   props.grepprg = props.grepprg or vim.o.grepprg
 
-  local base_dir = vim.fn.getcwd(0)
+  local base_dir = props.base_dir or vim.fn.getcwd(0)
   local ui2 = require("vim._core.ui2")
   local grepcmd = utils.make_cmd(props.grepprg, {
     cwd = base_dir,
@@ -273,15 +276,16 @@ builtins.helptags = function(props)
         end)
       end,
       preview_item = function(tag)
-        return vim.api.nvim_create_buf(false, true), function(w)
-          local buf = vim.api.nvim_win_get_buf(w)
-          vim.bo[buf].bufhidden = "wipe"
-          vim.bo[buf].buftype = "help"
+        return vim.api.nvim_create_buf(false, true),
+          function(w)
+            local buf = vim.api.nvim_win_get_buf(w)
+            vim.bo[buf].bufhidden = "wipe"
+            vim.bo[buf].buftype = "help"
 
-          vim._with({ buf = buf }, function()
-            vim.cmd.help(tag)
-          end)
-        end
+            vim._with({ buf = buf }, function()
+              vim.cmd.help(tag)
+            end)
+          end
       end,
     }, props)
   )
