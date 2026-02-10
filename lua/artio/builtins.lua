@@ -416,6 +416,9 @@ builtins.colorschemes = function(props)
     return vim.fs.basename(f):gsub("%.[^.]+$", "")
   end, files)
 
+  local current = vim.g.colors_name
+  local bg = vim.o.background
+
   return artio.generic(
     lst,
     extend({
@@ -424,6 +427,28 @@ builtins.colorschemes = function(props)
         vim.schedule(function()
           vim.cmd.colorscheme(text)
         end)
+      end,
+      on_quit = function()
+        -- reset colorscheme
+        vim.schedule(function()
+          if vim.g.colors_name ~= current then
+            vim.cmd.colorscheme(current)
+          end
+        end)
+      end,
+      preview_item = function(item)
+        return vim.api.nvim_create_buf(false, true),
+          function(w)
+            local buf = vim.api.nvim_win_get_buf(w)
+            vim.bo[buf].bufhidden = "wipe"
+            vim.bo[buf].buftype = "nofile"
+
+            vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
+            vim.api.nvim_win_set_config(w, { hide = true })
+
+            vim.cmd.colorscheme(item)
+            vim.o.background = bg
+          end
       end,
     }, props)
   )
