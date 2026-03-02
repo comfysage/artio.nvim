@@ -607,6 +607,36 @@ builtins.keymaps = function(props)
   )
 end
 
+builtins.commands = function(props)
+  props = props or {}
+  local lst = vim.api.nvim_get_commands({})
+
+  return artio.generic(
+    vim.tbl_values(lst),
+    extend({
+      prompt = "commands",
+      ---@param item vim.api.keyset.command_info
+      format_item = function(item)
+        return item.name
+      end,
+      ---@param cmd vim.api.keyset.command_info
+      on_close = function(cmd, _)
+        local nargs = vim.F.npcall(tonumber, cmd.nargs)
+        local fmt = (nargs and nargs > 0) and ":%s " or ":%s"
+
+        artio.schedule(function()
+          vim.api.nvim_feedkeys(string.format(fmt, cmd.name), "n", false)
+        end)
+      end,
+      hl_item = function(item)
+        return {
+          { { 0, #item.v.name }, "@function.macro.vim" },
+        }
+      end,
+    }, props)
+  )
+end
+
 builtins.quickfix = function(props)
   props = props or {}
 
