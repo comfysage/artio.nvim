@@ -335,6 +335,12 @@ builtins.keymaps()                                             *artio-keymaps*
 
   Plug: `<Plug>(artio-keymaps)`.
 
+builtins.commands()                                           *artio-commands*
+
+  list all user commands. uses formatted data from |nvim_get_commands()|.
+
+  Plug: `<Plug>(artio-commands)`.
+
 builtins.quickfix()                                           *artio-quickfix*
 
   show current quickfix list. allows previewing items and updating the list.
