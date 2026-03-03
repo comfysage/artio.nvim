@@ -26,8 +26,8 @@ vim.api.nvim_create_autocmd({ "UIEnter", "ColorScheme" }, {
     hi("ArtioPointer", { fg = cursor_hl.bg })
 
     hi("ArtioMatch", { link = "PmenuMatch" })
-    hi("ArtioMarker", { link = "DiagnosticWarn" })
-    hi("ArtioMarkerLine", { link = "Visual" })
+    hi("ArtioMark", { link = "DiagnosticWarn" })
+    hi("ArtioMarkLine", { link = "Visual" })
   end,
 })
 
