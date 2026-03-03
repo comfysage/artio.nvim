@@ -668,12 +668,12 @@ function View:showmatches()
 
     if marks[i] then
       self:mark(nil, srow + i - 1, indent - 1, {
-        virt_text = { { self.picker.opts.marker, "ArtioMarker" } },
+        virt_text = { { self.picker.opts.marker, "ArtioMark" } },
         virt_text_pos = "overlay",
         priority = ext_priority.marker,
       })
       self:mark(nil, srow + i - 1, 0, {
-        hl_group = "ArtioMarkerLine",
+        hl_group = "ArtioMarkLine",
         hl_eol = true,
         end_row = srow + i,
         end_col = 0,
