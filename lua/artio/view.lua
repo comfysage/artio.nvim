@@ -672,6 +672,14 @@ function View:showmatches()
         virt_text_pos = "overlay",
         priority = ext_priority.marker,
       })
+      self:mark(nil, srow + i - 1, 0, {
+        hl_group = "ArtioMarkerLine",
+        hl_eol = true,
+        end_row = srow + i,
+        end_col = 0,
+
+        priority = ext_priority.marker,
+      })
     end
 
     if hls[i] then

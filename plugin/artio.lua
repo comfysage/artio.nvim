@@ -27,6 +27,7 @@ vim.api.nvim_create_autocmd({ "UIEnter", "ColorScheme" }, {
 
     hi("ArtioMatch", { link = "PmenuMatch" })
     hi("ArtioMarker", { link = "DiagnosticWarn" })
+    hi("ArtioMarkerLine", { link = "Visual" })
   end,
 })
 
