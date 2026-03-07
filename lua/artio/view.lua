@@ -767,7 +767,8 @@ function View:previewconfig()
     col = 0,
     row = vim.o.lines
       - (self.win.height + cmdheight)
-      - ((vim.o.winborder == "none" or vim.o.winborder == "") and 0 or 2),
+      - ((vim.o.winborder == "none" or vim.o.winborder == "") and 0 or 2)
+      - (self.picker.win.hidestatusline and 0 or 1),
   }, previewopts or {})
 end
 
