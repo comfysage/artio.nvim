@@ -172,6 +172,10 @@ function View:win_config(win, hide, height)
     end)
     ui2.msg.set_pos()
   end
+
+  if self.preview_win and vim.api.nvim_win_is_valid(self.preview_win) then
+    vim.api.nvim_win_set_config(self.preview_win, self:previewconfig())
+  end
 end
 
 ---@param predicted? integer The predicted height of the cmdline window
@@ -750,6 +754,23 @@ function View:openpreview()
   return self.picker.preview_item(item.v)
 end
 
+function View:previewconfig()
+  local previewopts = self.picker.win.preview_opts
+    and vim.is_callable(self.picker.win.preview_opts)
+    and self.picker.win.preview_opts(self)
+  local cmdheight = vim.api.nvim_win_get_height(ui2.wins.cmd)
+
+  return vim.tbl_extend("force", {
+    relative = "editor",
+    width = vim.o.columns,
+    height = self.win.height,
+    col = 0,
+    row = vim.o.lines
+      - (self.win.height + cmdheight)
+      - ((vim.o.winborder == "none" or vim.o.winborder == "") and 0 or 2),
+  }, previewopts or {})
+end
+
 function View:updatepreview()
   local buf, on_win = self:openpreview()
   if buf < 0 then
@@ -757,20 +778,7 @@ function View:updatepreview()
   end
 
   if not self.preview_win then
-    local previewopts = self.picker.win.preview_opts
-      and vim.is_callable(self.picker.win.preview_opts)
-      and self.picker.win.preview_opts(self)
-    self.preview_win = vim.api.nvim_open_win(
-      buf,
-      false,
-      vim.tbl_extend("force", {
-        relative = "editor",
-        width = vim.o.columns,
-        height = self.win.height,
-        col = 0,
-        row = vim.o.lines - vim.o.cmdheight * 2 - 1 - (vim.o.winborder == "none" and 0 or 2),
-      }, previewopts or {})
-    )
+    self.preview_win = vim.api.nvim_open_win(buf, false, self:previewconfig())
   else
     vim.api.nvim_win_set_buf(self.preview_win, buf)
   end
