@@ -159,6 +159,11 @@ function View:win_config(win, hide, height)
   elseif vim.api.nvim_win_get_height(win) ~= height then
     vim.api.nvim_win_set_height(win, height)
   end
+
+  if not hide and self.picker.win.hidestatusline then
+    height = 0
+  end
+
   if vim.o.cmdheight ~= height then
     -- Avoid moving the cursor with 'splitkeep' = "screen", and altering the user
     -- configured value with noautocmd.
@@ -203,7 +208,6 @@ function View:setopts(restore)
       autocomplete = false,
     },
     g = {
-      laststatus = self.picker.win.hidestatusline and 0 or nil,
       showmode = false,
       showcmd = false,
     },
