@@ -32,27 +32,6 @@ end
 
 local prompt_hl_id = vim.api.nvim_get_hl_id_by_name("ArtioPrompt")
 
---- Set the 'cmdheight' and cmdline window height. Reposition message windows.
----
----@param win integer Cmdline window in the current tabpage.
----@param hide boolean Whether to hide or show the window.
----@param height integer (Text)height of the cmdline window.
-local function win_config(win, hide, height)
-  if ui2.cmdheight == 0 and vim.api.nvim_win_get_config(win).hide ~= hide then
-    vim.api.nvim_win_set_config(win, { hide = hide, height = not hide and height or nil })
-  elseif vim.api.nvim_win_get_height(win) ~= height then
-    vim.api.nvim_win_set_height(win, height)
-  end
-  if vim.o.cmdheight ~= height then
-    -- Avoid moving the cursor with 'splitkeep' = "screen", and altering the user
-    -- configured value with noautocmd.
-    vim._with({ noautocmd = true, o = { splitkeep = "screen" } }, function()
-      vim.o.cmdheight = height
-    end)
-    ui2.msg.set_pos()
-  end
-end
-
 ---@class artio.View
 ---@field picker artio.Picker
 ---@field closed boolean
@@ -169,11 +148,32 @@ function View:show(content, pos, firstc, prompt, indent, level, hl_id)
   self:hlselect()
 end
 
+--- Set the 'cmdheight' and cmdline window height. Reposition message windows.
+---
+---@param win integer Cmdline window in the current tabpage.
+---@param hide boolean Whether to hide or show the window.
+---@param height integer (Text)height of the cmdline window.
+function View:win_config(win, hide, height)
+  if ui2.cmdheight == 0 and vim.api.nvim_win_get_config(win).hide ~= hide then
+    vim.api.nvim_win_set_config(win, { hide = hide, height = not hide and height or nil })
+  elseif vim.api.nvim_win_get_height(win) ~= height then
+    vim.api.nvim_win_set_height(win, height)
+  end
+  if vim.o.cmdheight ~= height then
+    -- Avoid moving the cursor with 'splitkeep' = "screen", and altering the user
+    -- configured value with noautocmd.
+    vim._with({ noautocmd = true, o = { splitkeep = "screen" } }, function()
+      vim.o.cmdheight = height
+    end)
+    ui2.msg.set_pos()
+  end
+end
+
 ---@param predicted? integer The predicted height of the cmdline window
 function View:updatewinheight(predicted)
   local height = math.max(1, predicted or vim.api.nvim_win_text_height(ui2.wins.cmd, {}).all)
   height = math.min(height, self.win.height)
-  win_config(ui2.wins.cmd, false, height)
+  self:win_config(ui2.wins.cmd, false, height)
 end
 
 function View:saveview()
@@ -391,7 +391,7 @@ function View:hide()
   clear(cmdline.prompt)
 
   cmdline.prompt, cmdline.level = false, 0
-  win_config(ui2.wins.cmd, true, ui2.cmdheight)
+  self:win_config(ui2.wins.cmd, true, ui2.cmdheight)
 end
 
 function View:trigger_show()
