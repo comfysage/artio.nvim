@@ -104,3 +104,12 @@ vim.keymap.set("n", "<leader>ff", function()
     })
 end)
 ```
+
+# community
+
+issues are available on [github][github issues] and [codeberg][codeberg issues].
+
+pr's are limited to [codeberg](https://codeberg.org/comfysage/artio.nvim/pulls)
+
+[github issues]: https://github.com/comfysage/artio.nvim/issues
+[codeberg issues]: https://codeberg.org/comfysage/artio.nvim/issues
