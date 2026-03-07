@@ -291,23 +291,26 @@ builtins.buffers = function(props)
   props = props or {}
   local lst = find_buffers()
 
-  return artio.select(lst, {
-    prompt = "buffers",
-    format_item = function(bufnr)
-      return vim.api.nvim_buf_get_name(bufnr)
-    end,
-  }, function(bufnr, _)
-    vim.schedule(function()
-      vim.cmd.buffer(bufnr)
-    end)
-  end, {
-    get_icon = config.get().opts.use_icons and function(item)
-      return require("mini.icons").get("file", vim.api.nvim_buf_get_name(item.v))
-    end or nil,
-    preview_item = function(item)
-      return item
-    end,
-  }, props)
+  return artio.generic(
+    lst,
+    vim.tbl_extend("force", {
+      prompt = "buffers",
+      format_item = function(bufnr)
+        return vim.api.nvim_buf_get_name(bufnr)
+      end,
+      on_close = function(bufnr, _)
+        vim.schedule(function()
+          vim.cmd.buffer(bufnr)
+        end)
+      end,
+      get_icon = config.get().opts.use_icons and function(item)
+        return require("mini.icons").get("file", vim.api.nvim_buf_get_name(item.v))
+      end or nil,
+      preview_item = function(item)
+        return item
+      end,
+    }, props)
+  )
 end
 
 ---@param currentfile string
