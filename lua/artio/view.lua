@@ -760,6 +760,7 @@ function View:previewconfig()
     and self.picker.win.preview_opts(self)
   local cmdheight = vim.api.nvim_win_get_height(ui2.wins.cmd)
 
+  local winborder = previewopts and previewopts.border or vim.o.winborder
   return vim.tbl_extend("force", {
     relative = "editor",
     width = vim.o.columns,
@@ -767,7 +768,7 @@ function View:previewconfig()
     col = 0,
     row = vim.o.lines
       - (self.win.height + cmdheight)
-      - ((vim.o.winborder == "none" or vim.o.winborder == "") and 0 or 2)
+      - ((winborder == "none" or winborder == "") and 0 or 2)
       - (self.picker.win.hidestatusline and 0 or 1),
   }, previewopts or {})
 end
