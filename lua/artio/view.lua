@@ -328,7 +328,7 @@ function View:open()
   self:setopts()
 
   -- start insert *before* registering events
-  self:updatecursor()
+  self:updatecursor(#cmdbuff)
   vim._with({ noautocmd = true }, function()
     vim.cmd.startinsert({ bang = true })
   end)
@@ -455,6 +455,7 @@ function View:updatecursor(pos)
     pos = cursorpos[2] - promptlen
   end
 
+  -- set cursor pos to *at least* the prompt length
   curpos[2] = math.max(curpos[2], promptlen)
 
   if curpos[1] == promptidx + 1 and curpos[2] == promptlen + pos then
