@@ -261,7 +261,7 @@ function View:open()
   ui2.check_targets()
 
   vim.schedule(function()
-    self.augroup = vim.api.nvim_create_augroup("artio:group", { clear = true })
+    self.augroup = vim.api.nvim_create_augroup("@artio.view", { clear = true })
 
     vim.api.nvim_create_autocmd("CmdlineLeave", {
       group = self.augroup,
@@ -503,7 +503,7 @@ function View:setlines(posstart, posend, lines)
   last_draw_tick = get_changedtick()
 end
 
-local view_ns = vim.api.nvim_create_namespace("artio:view:ns")
+local view_ns = vim.api.nvim_create_namespace("@artio.view.ns")
 local ext_priority = {
   prompt = 1,
   info = 2,

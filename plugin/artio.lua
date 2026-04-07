@@ -4,7 +4,7 @@ end
 
 vim.g.loaded_artio = true
 
-local augroup = vim.api.nvim_create_augroup("artio:hl", {})
+local augroup = vim.api.nvim_create_augroup("@artio.hl", {})
 
 vim.api.nvim_create_autocmd({ "UIEnter", "ColorScheme" }, {
   group = augroup,
