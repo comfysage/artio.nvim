@@ -317,10 +317,12 @@ end
 ---@param item string
 ---@return integer score
 local function matchproximity(currentfile, item)
+  currentfile = vim.fs.abspath(currentfile)
+  local parts = vim.split(currentfile, "/", { trimempty = true })
   item = vim.fs.abspath(item)
 
   return vim.iter(ipairs(vim.split(item, "/", { trimempty = true }))):fold(0, function(score, i, part)
-    if part == currentfile[i] then
+    if part == parts[i] then
       return score + 50
     end
     return score
@@ -332,8 +334,12 @@ end
 --- - proportionally boosts items that match closely to the current file in proximity within the filesystem
 builtins.smart = function(props)
   props = props or {}
-  local currentfile = vim.api.nvim_buf_get_name(0)
+  local currentbuf = vim.fn.bufnr("%")
+  local currentfile = vim.api.nvim_buf_get_name(currentbuf)
   currentfile = vim.fs.abspath(currentfile)
+  local alternatebuf = vim.fn.bufnr("#")
+  local lbufnr = vim.fn.bufnr("$")
+  local bufnr_len = #(string.format("%d", lbufnr))
 
   props.findprg = props.findprg or findprg
   local base_dir = vim.fn.getcwd(0)
@@ -345,65 +351,106 @@ builtins.smart = function(props)
     .iter(find_buffers())
     :map(function(buf)
       local v = vim.api.nvim_buf_get_name(buf)
-      return vim.fs.abspath(v)
+      return { path = vim.fs.abspath(v), buf = buf }
     end)
     :totable()
 
-  local items = vim.list.unique(vim.iter({ lst, recentlst }):flatten(1):totable())
+  local items = vim.list.unique(
+    vim
+      .iter({ recentlst, lst })
+      :flatten(1)
+      :map(function(x)
+        if type(x) == "string" then
+          x = { path = x }
+        end
+        return x
+      end)
+      :map(function(x)
+        if x.buf and x.buf == currentbuf then
+          x.current = true
+        elseif x.buf and x.buf == alternatebuf then
+          x.alt = true
+        end
+        return x
+      end)
+      :totable(),
+    function(x)
+      return x.path
+    end
+  )
 
   return artio.pick(extend({
     prompt = "smart",
     items = items,
-    fn = artio.mergesorters("base", function(l, input)
-      if #input == 0 then
+    fn = artio.mergesorters(
+      "base",
+      -- use default sorter but only display buffer files if input is empty
+      function(l, input)
+        if #input == 0 then
+          return vim
+            .iter(l)
+            :map(function(item)
+              if not item.v.buf then
+                return
+              end
+              return { item.id, {}, 0 }
+            end)
+            :totable()
+        end
+
+        return artio.sorter(l, input)
+      end,
+      -- boost files that are open as buffers
+      function(l, _)
         return vim
           .iter(l)
-          :map(function(v)
-            if not vim.tbl_contains(recentlst, v.v) then
+          :map(function(item)
+            if not item.v.buf then
               return
             end
-            return { v.id, {}, 0 }
+            return { item.id, {}, 100 }
+          end)
+          :totable()
+      end,
+      -- boost files that are close in proximity to the current file
+      function(l, _)
+        return vim
+          .iter(l)
+          :map(function(item)
+            return { item.id, {}, matchproximity(currentfile, item.v.path) }
           end)
           :totable()
       end
-
-      return artio.sorter(l, input)
-    end, function(l, _)
-      return vim
-        .iter(l)
-        :map(function(v)
-          if not vim.tbl_contains(recentlst, v.v) then
-            return
-          end
-          return { v.id, {}, 100 }
-        end)
-        :totable()
-    end, function(l, _)
-      return vim
-        .iter(l)
-        :map(function(v)
-          return { v.id, {}, matchproximity(currentfile, v.v) }
-        end)
-        :totable()
-    end),
-    on_close = function(text, _)
+    ),
+    on_close = function(v, _)
       vim.schedule(function()
-        vim.cmd.edit(text)
+        vim.cmd.edit(v.path)
       end)
     end,
-    format_item = function(item)
-      return vim.fs.relpath(base_dir, item) or item
+    format_item = function(v)
+      local path = vim.fs.relpath(base_dir, v.path) or v.path
+      local ind = v.current and "%" or v.alt and "#" or " "
+      return v.buf and string.format("%s (%0" .. bufnr_len .. "d) %s", ind, v.buf, path)
+        or string.format("%s " .. string.rep(" ", bufnr_len + 2) .. " %s", ind, path)
+    end,
+    hl_item = function(_)
+      return {
+        { { 0, 2 }, "Special" },
+        { { 2, 3 }, "Delimiter" },
+        { { 3, 3 + bufnr_len }, "Number" },
+        { { 3 + bufnr_len, 3 + bufnr_len + 1 }, "NonText" },
+      }
     end,
     get_icon = config.get().opts.use_icons and function(item)
-      return require("mini.icons").get("file", item.v)
+      return require("mini.icons").get("file", item.v.path)
     end or nil,
-    preview_item = function(item)
-      return vim.fn.bufadd(item)
+    preview_item = function(v)
+      return vim.fn.bufadd(v.path)
     end,
     actions = extend(
       {},
       utils.make_setqflistactions(function(item)
-        return { filename = item.v }
+        return { filename = item.v.path }
       end)
     ),
   }, props))
