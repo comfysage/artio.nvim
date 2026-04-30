@@ -27,7 +27,8 @@ local View = require("artio.view")
 ---@field mappings? table<string, 'up'|'down'|'accept'|'cancel'|'togglepreview'|string>
 
 ---@class artio.Picker : artio.Picker.config
----@field co thread|nil
+---@field co thread?
+---@field thread function
 ---@field input string
 ---@field liveinput? string
 ---@field idx integer 1-indexed
@@ -74,6 +75,7 @@ function Picker:new(props)
   return setmetatable(t, Picker)
 end
 
+---@enum artio.Picker.Action
 local action_enum = {
   accept = 0,
   cancel = 1,
@@ -87,14 +89,12 @@ function Picker:open()
 
   self.view = View:new(self)
 
-  coroutine.wrap(function()
+  self.thread = coroutine.wrap(function()
     self.view:open()
 
     self:initkeymaps()
 
-    local co, ismain = coroutine.running()
-    assert(not ismain, "must be called from a coroutine")
-    self.co = co
+    self.co = coroutine.running()
 
     vim.api.nvim_exec_autocmds("User", { pattern = "ArtioEnter" })
 
@@ -124,7 +124,8 @@ function Picker:open()
     end
 
     vim.api.nvim_exec_autocmds("User", { pattern = "ArtioLeave" })
-  end)()
+  end)
+  self.thread()
 end
 
 function Picker:resume()
@@ -199,11 +200,11 @@ function Picker:delkeymaps()
 end
 
 function Picker:accept()
-  coroutine.resume(self.co, action_enum.accept)
+  self.thread(action_enum.accept)
 end
 
 function Picker:cancel()
-  coroutine.resume(self.co, action_enum.cancel)
+  self.thread(action_enum.cancel)
 end
 
 function Picker:fix()
