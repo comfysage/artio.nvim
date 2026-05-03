@@ -69,7 +69,7 @@ builtins.files = function(props)
         return require("mini.icons").get("file", item.v)
       end or nil,
       preview_item = function(item)
-        return vim.fn.bufadd(item)
+        return { buf = vim.fn.bufadd(item) }
       end,
       actions = extend(
         {},
@@ -135,11 +135,7 @@ builtins.grep = function(props)
       end)
     end,
     preview_item = function(item)
-      return vim.fn.bufadd(item[1]),
-        function(w)
-          vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
-          vim.api.nvim_win_set_cursor(w, { item[2], 0 })
-        end
+      return { buf = vim.fn.bufadd(item[1]), pos = { item[2], 0 } }
     end,
     get_icon = config.get().opts.use_icons and function(item)
       return require("mini.icons").get("file", item.v[1])
@@ -180,7 +176,7 @@ builtins.oldfiles = function(props)
         return require("mini.icons").get("file", item.v)
       end or nil,
       preview_item = function(item)
-        return vim.fn.bufadd(item)
+        return { buf = vim.fn.bufadd(item) }
       end,
       actions = extend(
         {},
@@ -217,11 +213,7 @@ builtins.buffergrep = function(props)
         return vim.api.nvim_buf_get_lines(buf, row - 1, row, true)[1]
       end,
       preview_item = function(row)
-        return buf,
-          function(w)
-            vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
-            vim.api.nvim_win_set_cursor(w, { row, 0 })
-          end
+        return { buf = buf, pos = { row, 0 } }
       end,
       get_icon = function(row)
         local v = tostring(row.v)
@@ -263,16 +255,16 @@ builtins.helptags = function(props)
         end)
       end,
       preview_item = function(tag)
-        return vim.api.nvim_create_buf(false, true),
-          function(w)
-            local buf = vim.api.nvim_win_get_buf(w)
-            vim.bo[buf].bufhidden = "wipe"
-            vim.bo[buf].buftype = "help"
+        local buf = vim.api.nvim_create_buf(false, true)
 
-            vim._with({ buf = buf }, function()
-              vim.cmd.help(tag)
-            end)
-          end
+        vim.bo[buf].bufhidden = "wipe"
+        vim.bo[buf].buftype = "help"
+
+        vim._with({ buf = buf }, function()
+          vim.cmd.help(tag)
+        end)
+
+        return { buf = buf }
       end,
     }, props)
   )
@@ -307,7 +299,7 @@ builtins.buffers = function(props)
         return require("mini.icons").get("file", vim.api.nvim_buf_get_name(item.v))
       end or nil,
       preview_item = function(item)
-        return item
+        return { buf = item }
       end,
     }, props)
   )
@@ -445,7 +437,7 @@ builtins.smart = function(props)
       return require("mini.icons").get("file", item.v.path)
     end or nil,
     preview_item = function(v)
-      return vim.fn.bufadd(v.path)
+      return { buf = vim.fn.bufadd(v.path) }
     end,
     actions = extend(
       {},
@@ -484,18 +476,10 @@ builtins.colorschemes = function(props)
         end)
       end,
       preview_item = function(item)
-        return vim.api.nvim_create_buf(false, true),
-          function(w)
-            local buf = vim.api.nvim_win_get_buf(w)
-            vim.bo[buf].bufhidden = "wipe"
-            vim.bo[buf].buftype = "nofile"
+        vim.cmd.colorscheme(item)
+        vim.o.background = bg
 
-            vim.api.nvim_buf_set_lines(buf, 0, -1, false, {})
-            vim.api.nvim_win_set_config(w, { hide = true })
-
-            vim.cmd.colorscheme(item)
-            vim.o.background = bg
-          end
+        return {}
       end,
     }, props)
   )
@@ -714,11 +698,7 @@ builtins.quickfix = function(props)
         return string.format("%s:%d:%d:%s", item.name, item.lnum, item.col, item.text)
       end,
       preview_item = function(item)
-        return item.bufnr,
-          function(w)
-            vim.api.nvim_set_option_value("cursorline", true, { scope = "local", win = w })
-            vim.api.nvim_win_set_cursor(w, { item.lnum, item.col })
-          end
+        return { buf = item.bufnr, pos = { item.lnum, item.col }, pos_end = { item.end_lnum, item.end_col } }
       end,
       get_icon = config.get().opts.use_icons and function(item)
         return require("mini.icons").get("file", item.v.name)

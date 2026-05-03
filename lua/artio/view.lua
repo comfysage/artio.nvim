@@ -738,18 +738,17 @@ function View:togglepreview()
   self:updatepreview()
 end
 
----@return integer
----@return fun(win: integer)?
+---@return {buf?:integer, pos?:[integer,integer], pos_end?:[integer,integer]}?
 function View:openpreview()
   if self.picker.idx == 0 then
-    return -1
+    return
   end
 
   local match = self.picker.matches[self.picker.idx]
   local item = self.picker.items[match[1]]
 
   if not item or not (self.picker.preview_item and vim.is_callable(self.picker.preview_item)) then
-    return -1
+    return
   end
 
   return self.picker.preview_item(item.v)
@@ -764,6 +763,7 @@ function View:previewconfig()
   local winborder = previewopts and previewopts.border or vim.o.winborder
   return vim.tbl_extend("force", {
     relative = "editor",
+    focusable = false,
     width = vim.o.columns,
     height = self.win.height,
     col = 0,
@@ -775,25 +775,28 @@ function View:previewconfig()
 end
 
 function View:updatepreview()
-  local buf, on_win = self:openpreview()
-  if buf < 0 then
+  local pr = self:openpreview()
+  if not pr or not pr.buf then
     return
   end
 
   if not self.preview_win then
-    self.preview_win = vim.api.nvim_open_win(buf, false, self:previewconfig())
+    self.preview_win = vim.api.nvim_open_win(pr.buf, false, self:previewconfig())
   else
-    vim.api.nvim_win_set_buf(self.preview_win, buf)
+    vim.api.nvim_win_set_buf(self.preview_win, pr.buf)
   end
 
   vim._with({ win = self.preview_win, noautocmd = true }, function()
     vim.api.nvim_set_option_value("previewwindow", true, { scope = "local" })
     vim.api.nvim_set_option_value("eventignorewin", "all,-FileType", { scope = "local" })
-  end)
 
-  if on_win and vim.is_callable(on_win) then
-    on_win(self.preview_win)
-  end
+    local sameline = pr.pos ~= nil and pr.pos_end == nil or pr.pos_end[1] == pr.pos[1]
+    vim.api.nvim_set_option_value("cursorline", sameline, { scope = "local" })
+
+    if pr.pos then
+      vim.api.nvim_win_set_cursor(self.preview_win, pr.pos)
+    end
+  end)
 end
 
 function View:softupdatepreview()

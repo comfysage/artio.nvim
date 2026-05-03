@@ -13,7 +13,7 @@ local View = require("artio.view")
 ---@field on_close fun(text: string, idx: integer)
 ---@field get_items? fun(input: string): artio.Picker.item[]
 ---@field format_item? fun(item: any): string
----@field preview_item? fun(item: any): integer, fun(win: integer)
+---@field preview_item? fun(item: any):{buf?:integer, pos?:[integer,integer], pos_end?:[integer,integer]}
 ---@field get_icon? fun(item: artio.Picker.item): string, string
 ---@field hl_item? fun(item: artio.Picker.item): artio.Picker.hl[]
 ---@field on_quit? fun()
