@@ -714,4 +714,37 @@ builtins.quickfix = function(props)
   )
 end
 
+builtins.document_symbols = function(props)
+  props = props or {}
+
+  local buf = vim.api.nvim_get_current_buf()
+  local win = vim.api.nvim_get_current_win()
+
+  vim.lsp.buf.document_symbol({
+    on_list = function(what)
+      local lst = what.items
+
+      return artio.select(lst, {
+        prompt = "document_symbols",
+        format_item = function(v)
+          return v.text
+        end,
+        preview_item = function(v)
+          return {
+            buf = buf,
+            pos = { v.lnum, v.col },
+            pos_end = { v.end_lnum, v.end_col },
+          }
+        end,
+      }, function(v, _)
+        if not v then
+          return
+        end
+
+        vim.api.nvim_win_set_cursor(win, { v.lnum, v.col })
+      end, props)
+    end,
+  })
+end
+
 return builtins
