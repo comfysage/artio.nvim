@@ -185,7 +185,7 @@ API-PICKER                                                  *artio-api-picker*
                         first argument and the item id as the second.
     - {get_items}?      (`fun(input: string): artio.Picker.item[]`)
     - {format_item}?    (`fun(item: any): string`)
-    - {preview_item}?   (`fun(item: any): integer, fun(win: integer)`)
+    - {preview_item}?   (`fun(item: any): {buf?:integer, pos?:[integer,integer], pos_end?:[integer,integer]}`)
     - {get_icon}?       (`fun(item: artio.Picker.item): string, string`)
     - {hl_item}?        (`fun(item: artio.Picker.item): artio.Picker.hl[]`)
     - {on_quit}?        (`fun()`)
