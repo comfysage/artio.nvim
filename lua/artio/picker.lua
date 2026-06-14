@@ -1,7 +1,7 @@
 local View = require("artio.view")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
----@alias artio.Picker.match [integer, integer[], integer] [item, pos[], score]
+---@alias artio.Picker.match { [1]: integer, [2]: integer[], [3]: integer } item, positions, score
 ---@alias artio.Picker.matches table<integer, artio.Picker.match> id: match
 ---@alias artio.Picker.sorter fun(lst: artio.Picker.item[], input: string): artio.Picker.matches
 ---@alias artio.Picker.hl [[integer, integer], string]
@@ -35,8 +35,12 @@ local View = require("artio.view")
 ---@field matches artio.Picker.match[]
 ---@field marked table<integer, true|nil>
 ---@field live boolean
+---@field opts artio.config.opts
+---@field win artio.config.win
 local Picker = {}
 Picker.__index = Picker
+
+---@type artio.Picker?
 Picker.active_picker = nil
 
 ---@param props artio.Picker.config
