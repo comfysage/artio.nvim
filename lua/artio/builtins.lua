@@ -58,8 +58,8 @@ builtins.files = function(props)
     extend({
       prompt = "files",
       on_close = function(text, _)
-        vim.schedule(function()
-          vim.cmd.edit(text)
+        artio.schedule(function()
+          utils.edit(text)
         end)
       end,
       format_item = function(item)
@@ -129,9 +129,10 @@ builtins.grep = function(props)
     end,
     fn = artio.sorter,
     on_close = function(item, _)
-      vim.schedule(function()
-        vim.cmd.edit(item[1])
-        vim.api.nvim_win_set_cursor(0, { item[2], item[3] })
+      artio.schedule(function()
+        local win = vim.api.nvim_get_current_win()
+        utils.edit(item[1], { win = win })
+        vim.api.nvim_win_set_cursor(win, { item[2], item[3] })
       end)
     end,
     preview_item = function(item)
@@ -168,8 +169,8 @@ builtins.oldfiles = function(props)
     extend({
       prompt = "oldfiles",
       on_close = function(text, _)
-        vim.schedule(function()
-          vim.cmd.edit(text)
+        artio.schedule(function()
+          utils.edit(text)
         end)
       end,
       get_icon = config.get().opts.use_icons and function(item)
@@ -415,8 +416,8 @@ builtins.smart = function(props)
       end
     ),
     on_close = function(v, _)
-      vim.schedule(function()
-        vim.cmd.edit(v.path)
+      artio.schedule(function()
+        utils.edit(v.path)
       end)
     end,
     format_item = function(v)

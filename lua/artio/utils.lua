@@ -1,5 +1,23 @@
 local utils = {}
 
+---@param path string
+---@param ctx? vim.context.mods
+function utils.edit(path, ctx)
+  local f = function()
+    vim.api.nvim_cmd({
+      cmd = "edit",
+      args = { path },
+      magic = { file = false, bar = false },
+    }, {})
+  end
+
+  if ctx then
+    return vim._with(ctx, f)
+  end
+
+  return f()
+end
+
 local function cmd_callback(o)
   local src = o.stderr
   if o.code == 0 then
