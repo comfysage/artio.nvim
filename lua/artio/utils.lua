@@ -36,10 +36,13 @@ function utils.make_cmd(prg, opts)
     if not prg then
       return {}
     end
-    arg = string.format("'%s'", arg or "")
-    local cmd, n = prg:gsub("%$%*", arg)
-    if n == 0 then
-      cmd = ("%s %s"):format(prg, arg)
+    local cmd, n = prg, nil
+    if arg and #arg > 0 then
+      arg = string.format("'%s'", arg)
+      cmd, n = prg:gsub("%$%*", arg)
+      if n == 0 then
+        cmd = ("%s %s"):format(prg, arg)
+      end
     end
     return cmd_callback(vim
       .system(
