@@ -46,7 +46,7 @@ function utils.make_cmd(prg, opts)
     end
     return cmd_callback(vim
       .system(
-        { vim.o.shell, "-c", cmd },
+        { vim.o.shell, vim.o.shellcmdflag, cmd },
         vim.tbl_extend("force", {
           text = true,
         }, opts or {})
