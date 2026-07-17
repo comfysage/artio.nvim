@@ -258,8 +258,6 @@ function View:open()
   _log = nil
   _log = {}
 
-  ui2.check_targets()
-
   vim.schedule(function()
     self.augroup = vim.api.nvim_create_augroup("@artio.view", { clear = true })
 
@@ -553,7 +551,7 @@ local function getpromptinfo(p, info)
   if info == "index" then
     return ("[%d]"):format(p.idx)
   elseif info == "list" then
-    return ("(%d/%d)"):format(#p.matches, #p.items)
+    return ("(%d/%d)"):format(#p.matches, p.items and #p.items or 0)
   end
   return ""
 end

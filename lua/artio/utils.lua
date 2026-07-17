@@ -1,3 +1,5 @@
+local uv = vim.uv
+
 local utils = {}
 
 ---@param path string
@@ -18,13 +20,15 @@ function utils.edit(path, ctx)
   return f()
 end
 
-local function cmd_callback(o)
-  local src = o.stderr
-  if o.code == 0 then
-    src = o.stdout
+local function parsechunks(chunks)
+  local lines = {}
+
+  for _, chunk in ipairs(chunks) do
+    for _, line in ipairs(vim.split(chunk, "\n", { trimempty = true })) do
+      table.insert(lines, line)
+    end
   end
-  src = src
-  local lines = vim.split(src, "\n", { trimempty = true })
+
   return lines
 end
 
@@ -32,6 +36,9 @@ end
 ---@param opts? table
 ---@return fun(arg?: string): string[]
 function utils.make_cmd(prg, opts)
+  ---@async
+  ---@param arg? string
+  ---@return string[]
   return function(arg)
     if not prg then
       return {}
@@ -44,14 +51,41 @@ function utils.make_cmd(prg, opts)
         cmd = ("%s %s"):format(prg, arg)
       end
     end
-    return cmd_callback(vim
-      .system(
-        { vim.o.shell, vim.o.shellcmdflag, cmd },
-        vim.tbl_extend("force", {
-          text = true,
-        }, opts or {})
-      )
-      :wait())
+
+    local chunks = {}
+
+    local stdout = uv.new_pipe()
+
+    local co = coroutine.running()
+    assert(co, "utils.make_cmd needs to be run inside a coroutine")
+
+    uv.spawn(
+      vim.o.shell,
+      vim.tbl_extend("keep", {
+        stdio = { nil, stdout, nil },
+        args = { vim.o.shellcmdflag, cmd },
+      }, opts or {}),
+      function(code, signal)
+        if code == 0 then
+          local lines = parsechunks(chunks)
+          coroutine.resume(co, lines)
+          return
+        end
+        coroutine.resume(co, {
+          ("error while running shell cmd %s (%d)"):format(signal, code),
+        })
+      end
+    )
+
+    ---@diagnostic disable-next-line: param-type-mismatch
+    uv.read_start(stdout, function(err, data)
+      assert(not err, err)
+      if data then
+        table.insert(chunks, data)
+      end
+    end)
+
+    return coroutine.yield()
   end
 end
 

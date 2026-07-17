@@ -1,4 +1,5 @@
 local View = require("artio.view")
+local ui2 = require("vim._core.ui2")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match { [1]: integer, [2]: integer[], [3]: integer } item, positions, score
@@ -45,7 +46,12 @@ Picker.active_picker = nil
 
 ---@param props artio.Picker.config
 function Picker:new(props)
-  vim.validate("Picker.items", props.items, "table")
+  vim.validate("Picker.items", props.items, function(v)
+    if not v then
+      return props.get_items and type(props.get_items) == "function"
+    end
+    return type(v) == "table" and vim.islist(v)
+  end)
   vim.validate("Picker:fn", props.fn, "function")
   vim.validate("Picker:on_close", props.on_close, "function")
 
@@ -55,7 +61,6 @@ function Picker:new(props)
     input = nil,
     liveinput = nil,
     idx = 0,
-    items = {},
     matches = {},
     marked = {},
   }, require("artio.config").get(), props)
@@ -74,8 +79,6 @@ function Picker:new(props)
     t.liveinput = ""
   end
 
-  Picker.getitems(t, "")
-
   return setmetatable(t, Picker)
 end
 
@@ -93,7 +96,11 @@ function Picker:open()
 
   self.view = View:new(self)
 
+  ui2.check_targets()
   self.thread = coroutine.wrap(function()
+    -- self:getitems("")
+    -- self.items = self.items or {}
+
     self.view:open()
 
     self:initkeymaps()
@@ -221,8 +228,8 @@ local function item_is_structured(item)
 end
 
 function Picker:getitems(input)
-  if self.live then
-    self.items = self.get_items and self.get_items(input) or self.items
+  if (self.items == nil or self.live) and self.get_items then
+    self.items = self.get_items(input)
   end
 
   if #self.items > 0 and not item_is_structured(self.items[1]) then
@@ -246,10 +253,13 @@ end
 
 ---@param input? string
 function Picker:getmatches(input)
+  assert(coroutine.running(), "Picker:getmatches needs to be called from a coroutine")
+
   if not input then
     input = self.live and self.liveinput or self.input
   end
   self:getitems(input)
+  assert(self.items ~= nil, "Picker.items cannot be nil after Picker:getitems")
 
   -- if live, ignore sorting
   if self.live then

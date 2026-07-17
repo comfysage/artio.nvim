@@ -49,39 +49,38 @@ builtins.files = function(props)
   props.findprg = props.findprg or findprg
 
   local base_dir = props.base_dir or vim.fn.getcwd(0)
-  local lst = utils.make_cmd(props.findprg, {
-    cwd = base_dir,
-  })()
 
-  return artio.generic(
-    lst,
-    extend({
-      prompt = "files",
-      on_close = function(text, _)
-        artio.schedule(function()
-          utils.edit(text)
-        end)
-      end,
-      format_item = function(item)
-        return vim.fs.relpath(base_dir, item) or item
-      end,
-      get_icon = config.get().opts.use_icons and function(item)
-        return require("mini.icons").get("file", item.v)
-      end or nil,
-      preview_item = function(item)
-        return { buf = vim.fn.bufadd(item) }
-      end,
-      actions = extend(
-        {},
-        utils.make_setqflistactions(function(item)
-          return { filename = item.v }
-        end),
-        utils.make_fileactions(function(item)
-          return vim.fn.bufnr(item.v, true)
-        end)
-      ),
-    }, props)
-  )
+  return artio.pick(extend({
+    prompt = "files",
+    live = false,
+    get_items = utils.make_cmd(props.findprg, {
+      cwd = base_dir,
+    }),
+    fn = artio.sorter,
+    on_close = function(text, _)
+      artio.schedule(function()
+        utils.edit(text)
+      end)
+    end,
+    format_item = function(item)
+      return vim.fs.relpath(base_dir, item) or item
+    end,
+    get_icon = config.get().opts.use_icons and function(item)
+      return require("mini.icons").get("file", item.v)
+    end or nil,
+    preview_item = function(item)
+      return { buf = vim.fn.bufadd(item) }
+    end,
+    actions = extend(
+      {},
+      utils.make_setqflistactions(function(item)
+        return { filename = item.v }
+      end),
+      utils.make_fileactions(function(item)
+        return vim.fn.bufnr(item.v, true)
+      end)
+    ),
+  }, props))
 end
 
 ---@class artio.picker.grep.Props : artio.picker.generic.fs.Props
@@ -99,8 +98,8 @@ builtins.grep = function(props)
   })
 
   return artio.pick(extend({
-    items = {},
     prompt = "grep",
+    live = true,
     get_items = function(input)
       if input == "" then
         return {}
@@ -108,24 +107,31 @@ builtins.grep = function(props)
 
       local lines = grepcmd(input)
 
-      vim.fn.setloclist(ui2.wins.cmd, {}, " ", {
-        title = "grep[" .. input .. "]",
-        lines = lines,
-        efm = vim.o.grepformat,
-        nr = "$",
-      })
+      local co = coroutine.running()
+      assert(co)
 
-      return vim
-        .iter(ipairs(vim.fn.getloclist(ui2.wins.cmd)))
-        :map(function(i, locitem)
-          local name = vim.fs.abspath(vim.fn.bufname(locitem.bufnr))
-          return {
-            id = i,
-            v = { name, locitem.lnum, locitem.col },
-            text = ("%s:%d:%d:%s"):format(vim.fs.relpath(base_dir, name), locitem.lnum, locitem.col, locitem.text),
-          }
-        end)
-        :totable()
+      coroutine.wrap(vim.schedule_wrap(function()
+        vim.fn.setloclist(ui2.wins.cmd, {}, " ", {
+          title = "grep[" .. input .. "]",
+          lines = lines,
+          efm = vim.o.grepformat,
+          nr = "$",
+        })
+        local results = vim
+          .iter(ipairs(vim.fn.getloclist(ui2.wins.cmd)))
+          :map(function(i, locitem)
+            local name = vim.fs.abspath(vim.fn.bufname(locitem.bufnr))
+            return {
+              id = i,
+              v = { name, locitem.lnum, locitem.col },
+              text = ("%s:%d:%d:%s"):format(vim.fs.relpath(base_dir, name), locitem.lnum, locitem.col, locitem.text),
+            }
+          end)
+          :totable()
+        coroutine.resume(co, results)
+      end))()
+
+      return coroutine.yield()
     end,
     fn = artio.sorter,
     on_close = function(item, _)
@@ -336,9 +342,6 @@ builtins.smart = function(props)
 
   props.findprg = props.findprg or findprg
   local base_dir = vim.fn.getcwd(0)
-  local lst = utils.make_cmd(props.findprg, {
-    cwd = base_dir,
-  })()
 
   local recentlst = vim
     .iter(find_buffers())
@@ -348,33 +351,37 @@ builtins.smart = function(props)
     end)
     :totable()
 
-  local items = vim.list.unique(
-    vim
-      .iter({ recentlst, lst })
-      :flatten(1)
-      :map(function(x)
-        if type(x) == "string" then
-          x = { path = x }
-        end
-        return x
-      end)
-      :map(function(x)
-        if x.buf and x.buf == currentbuf then
-          x.current = true
-        elseif x.buf and x.buf == alternatebuf then
-          x.alt = true
-        end
-        return x
-      end)
-      :totable(),
-    function(x)
-      return x.path
-    end
-  )
-
   return artio.pick(extend({
     prompt = "smart",
-    items = items,
+    live = false,
+    get_items = function(_)
+      local lst = utils.make_cmd(props.findprg, {
+        cwd = base_dir,
+      })()
+
+      local results = vim
+        .iter({ recentlst, lst })
+        :flatten(1)
+        :map(function(x)
+          if type(x) == "string" then
+            x = { path = x }
+          end
+          return x
+        end)
+        :map(function(x)
+          if x.buf and x.buf == currentbuf then
+            x.current = true
+          elseif x.buf and x.buf == alternatebuf then
+            x.alt = true
+          end
+          return x
+        end)
+        :totable()
+
+      return vim.list.unique(results, function(x)
+        return x.path
+      end)
+    end,
     fn = artio.mergesorters(
       "base",
       -- use default sorter but only display buffer files if input is empty
