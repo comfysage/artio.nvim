@@ -105,7 +105,19 @@ builtins.grep = function(props)
         return {}
       end
 
-      local lines = grepcmd(input)
+      local lines, err = grepcmd(input)
+      if err then
+        return vim
+          .iter(ipairs(lines))
+          :map(function(i, l)
+            return {
+              id = i,
+              v = {},
+              text = l,
+            }
+          end)
+          :totable()
+      end
 
       local co = coroutine.running()
       assert(co)
@@ -145,7 +157,7 @@ builtins.grep = function(props)
       return { buf = vim.fn.bufadd(item[1]), pos = { item[2], 0 } }
     end,
     get_icon = config.get().opts.use_icons and function(item)
-      return require("mini.icons").get("file", item.v[1])
+      return item.v[1] and require("mini.icons").get("file", item.v[1]) or nil
     end or nil,
     hl_item = utils.hl_qfitem,
     actions = extend(

@@ -53,8 +53,10 @@ function utils.make_cmd(prg, opts)
     end
 
     local chunks = {}
+    local err_chunks = {}
 
     local stdout = uv.new_pipe()
+    local stderr = uv.new_pipe()
 
     local co = coroutine.running()
     assert(co, "utils.make_cmd needs to be run inside a coroutine")
@@ -62,7 +64,7 @@ function utils.make_cmd(prg, opts)
     uv.spawn(
       vim.o.shell,
       vim.tbl_extend("keep", {
-        stdio = { nil, stdout, nil },
+        stdio = { nil, stdout, stderr },
         args = { vim.o.shellcmdflag, cmd },
       }, opts or {}),
       function(code, signal)
@@ -71,9 +73,10 @@ function utils.make_cmd(prg, opts)
           coroutine.resume(co, lines)
           return
         end
-        coroutine.resume(co, {
-          ("error while running shell cmd %s (%d)"):format(signal, code),
-        })
+        local err = ("error while running shell cmd %s (%d)"):format(signal, code)
+        table.insert(err_chunks, 1, err)
+        local lines = parsechunks(err_chunks)
+        coroutine.resume(co, lines, true)
       end
     )
 
@@ -82,6 +85,14 @@ function utils.make_cmd(prg, opts)
       assert(not err, err)
       if data then
         table.insert(chunks, data)
+      end
+    end)
+
+    ---@diagnostic disable-next-line: param-type-mismatch
+    uv.read_start(stderr, function(err, data)
+      assert(not err, err)
+      if data then
+        table.insert(err_chunks, data)
       end
     end)
 
@@ -182,9 +193,21 @@ function utils.make_fileactions(fn)
 end
 
 function utils.hl_qfitem(item)
-  local name_end = string.find(item.text, ":") - 1
-  local lnum_end = string.find(item.text, ":", name_end + 2) - 1
-  local col_end = string.find(item.text, ":", lnum_end + 2) - 1
+  local name_end = string.find(item.text, ":")
+  if not name_end then
+    return
+  end
+  name_end = name_end - 1
+  local lnum_end = string.find(item.text, ":", name_end + 2)
+  if not lnum_end then
+    return
+  end
+  lnum_end = lnum_end - 1
+  local col_end = string.find(item.text, ":", lnum_end + 2)
+  if not col_end then
+    return
+  end
+  col_end = col_end - 1
 
   return {
     { { 0, name_end }, "Title" },
