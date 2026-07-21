@@ -1,5 +1,4 @@
 local View = require("artio.view")
-local ui2 = require("vim._core.ui2")
 
 ---@alias artio.Picker.item { id: integer, v: any, text: string, icon?: string, icon_hl?: string, hls?: artio.Picker.hl[] }
 ---@alias artio.Picker.match { [1]: integer, [2]: integer[], [3]: integer } item, positions, score
@@ -89,6 +88,8 @@ local action_enum = {
 }
 
 function Picker:open()
+  local ui2 = require("vim._core.ui2")
+
   if Picker.active_picker and Picker.active_picker ~= self then
     Picker.active_picker:close(true)
   end
@@ -184,7 +185,7 @@ function Picker:initkeymaps()
   local ui2 = require("vim._core.ui2")
 
   ---@type vim.keymap.set.Opts
-  local opts = { buffer = ui2.bufs.cmd }
+  local opts = { buf = ui2.bufs.cmd }
 
   if self.actions then
     vim.iter(pairs(self.actions)):each(function(k, v)

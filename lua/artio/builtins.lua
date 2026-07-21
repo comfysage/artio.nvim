@@ -73,11 +73,11 @@ builtins.files = function(props)
     end,
     actions = extend(
       {},
-      utils.make_setqflistactions(function(item)
-        return { filename = item.v }
-      end),
       utils.make_fileactions(function(item)
         return vim.fn.bufnr(item.v, true)
+      end),
+      utils.make_setqflistactions(function(item)
+        return { filename = item.v }
       end)
     ),
   }, props))
@@ -461,6 +461,9 @@ builtins.smart = function(props)
     end,
     actions = extend(
       {},
+      utils.make_fileactions(function(item)
+        return vim.fn.bufnr(item.v.path, true)
+      end),
       utils.make_setqflistactions(function(item)
         return { filename = item.v.path }
       end)
