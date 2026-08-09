@@ -72,7 +72,6 @@ require("artio").setup({
     ["<c-g>"] = "togglelive",
     ["<c-l>"] = "togglepreview",
     ["<c-q>"] = "setqflist",
-    ["<m-q>"] = "setqflistmark",
   },
 })
 

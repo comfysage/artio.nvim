@@ -76,7 +76,7 @@ builtins.files = function(props)
       utils.make_fileactions(function(item)
         return vim.fn.bufnr(item.v, true)
       end),
-      utils.make_setqflistactions(function(item)
+      utils.make_setqflistaction(function(item)
         return { filename = item.v }
       end)
     ),
@@ -162,7 +162,7 @@ builtins.grep = function(props)
     hl_item = utils.hl_qfitem,
     actions = extend(
       {},
-      utils.make_setqflistactions(function(item)
+      utils.make_setqflistaction(function(item)
         return { filename = item.v[1], lnum = item.v[2], col = item.v[3], text = item.text }
       end)
     ),
@@ -199,7 +199,7 @@ builtins.oldfiles = function(props)
       end,
       actions = extend(
         {},
-        utils.make_setqflistactions(function(item)
+        utils.make_setqflistaction(function(item)
           return { filename = item.v }
         end)
       ),
@@ -240,7 +240,7 @@ builtins.buffergrep = function(props)
       end,
       actions = extend(
         {},
-        utils.make_setqflistactions(function(item)
+        utils.make_setqflistaction(function(item)
           return { filename = vim.api.nvim_buf_get_name(buf), lnum = item.v }
         end)
       ),
@@ -464,7 +464,7 @@ builtins.smart = function(props)
       utils.make_fileactions(function(item)
         return vim.fn.bufnr(item.v.path, true)
       end),
-      utils.make_setqflistactions(function(item)
+      utils.make_setqflistaction(function(item)
         return { filename = item.v.path }
       end)
     ),
@@ -729,7 +729,7 @@ builtins.quickfix = function(props)
       hl_item = utils.hl_qfitem,
       actions = extend(
         {},
-        utils.make_setqflistactions(function(item)
+        utils.make_setqflistaction(function(item)
           return item.v
         end)
       ),

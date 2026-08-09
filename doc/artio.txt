@@ -96,7 +96,6 @@ NOTE: if you override the mappings, make sure to provide keys for all actions
       ["<tab>"] = "mark",
       ["<c-l>"] = "togglepreview",
       ["<c-q>"] = "setqflist",
-      ["<m-q>"] = "setqflistmark",
     },
   }
 <

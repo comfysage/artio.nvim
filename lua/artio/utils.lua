@@ -104,6 +104,19 @@ end
 ---@return artio.Picker.action
 function utils.make_setqflist(fn)
   return require("artio").wrap(function(self)
+    if #(vim.tbl_keys(self.marked)) > 0 then
+      vim.fn.setqflist(vim
+        .iter(ipairs(self:getmarked()))
+        :map(function(_, id)
+          local item = self.items[id]
+          local qfitem = fn(item)
+          return qfitem
+        end)
+        :totable())
+      self:cancel()
+      return
+    end
+
     vim.fn.setqflist(vim
       .iter(ipairs(self.matches))
       :map(function(_, match)
@@ -119,29 +132,10 @@ function utils.make_setqflist(fn)
 end
 
 ---@param fn fun(item: artio.Picker.item): vim.quickfix.entry
----@return artio.Picker.action
-function utils.make_setqflistmark(fn)
-  return require("artio").wrap(function(self)
-    vim.fn.setqflist(vim
-      .iter(ipairs(self:getmarked()))
-      :map(function(_, id)
-        local item = self.items[id]
-        local qfitem = fn(item)
-        return qfitem
-      end)
-      :totable())
-    self:cancel()
-  end, function(_)
-    vim.cmd.copen()
-  end)
-end
-
----@param fn fun(item: artio.Picker.item): vim.quickfix.entry
 ---@return table<string, artio.Picker.action>
-function utils.make_setqflistactions(fn)
+function utils.make_setqflistaction(fn)
   return {
     setqflist = utils.make_setqflist(fn),
-    setqflistmark = utils.make_setqflistmark(fn),
   }
 end
 

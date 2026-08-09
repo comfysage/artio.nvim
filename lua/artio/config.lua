@@ -53,7 +53,6 @@ M.default = {
     ["<c-g>"] = "togglelive",
     ["<c-l>"] = "togglepreview",
     ["<c-q>"] = "setqflist",
-    ["<m-q>"] = "setqflistmark",
     ["<c-s>"] = "split",
     ["<c-v>"] = "vsplit",
     ["<c-t>"] = "tabnew",
