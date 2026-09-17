@@ -95,6 +95,7 @@ builtins.grep = function(props)
   local ui2 = require("vim._core.ui2")
   local grepcmd = utils.make_cmd(props.grepprg, {
     cwd = base_dir,
+    ignore = { 1 },
   })
 
   return artio.pick(extend({

@@ -36,6 +36,8 @@ end
 ---@param opts? table
 ---@return fun(arg?: string): string[]
 function utils.make_cmd(prg, opts)
+  opts = opts or {}
+
   ---@async
   ---@param arg? string
   ---@return string[]
@@ -61,24 +63,25 @@ function utils.make_cmd(prg, opts)
     local co = coroutine.running()
     assert(co, "utils.make_cmd needs to be run inside a coroutine")
 
-    uv.spawn(
-      vim.o.shell,
-      vim.tbl_extend("keep", {
-        stdio = { nil, stdout, stderr },
-        args = { vim.o.shellcmdflag, cmd },
-      }, opts or {}),
-      function(code, signal)
-        if code == 0 then
-          local lines = parsechunks(chunks)
-          coroutine.resume(co, lines)
-          return
-        end
-        local err = ("error while running shell cmd %s (%d)"):format(signal, code)
-        table.insert(err_chunks, 1, err)
-        local lines = parsechunks(err_chunks)
-        coroutine.resume(co, lines, true)
+    uv.spawn(vim.o.shell, {
+      stdio = { nil, stdout, stderr },
+      args = { vim.o.shellcmdflag, cmd },
+      cwd = opts.cwd,
+      env = opts.env,
+    }, function(code, signal)
+      if code == 0 then
+        local lines = parsechunks(chunks)
+        coroutine.resume(co, lines)
+        return
+      elseif opts.ignore and vim.tbl_contains(opts.ignore, code) then
+        coroutine.resume(co, {})
+        return
       end
-    )
+      local err = ("error while running shell cmd %s (%d)"):format(signal, code)
+      table.insert(err_chunks, 1, err)
+      local lines = parsechunks(err_chunks)
+      coroutine.resume(co, lines, true)
+    end)
 
     ---@diagnostic disable-next-line: param-type-mismatch
     uv.read_start(stdout, function(err, data)
